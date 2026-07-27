@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct Participant: Identifiable, Codable {
+struct Participant: Identifiable, Codable, Equatable {
     let id: Int
     var userID: Int
     var challengeID: Int

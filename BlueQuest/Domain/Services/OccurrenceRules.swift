@@ -8,6 +8,12 @@
 import Foundation
 
 enum OccurrenceRules {
+    static func deadline(for occurrence: Occurrence, task: Task, calendar: Calendar = .current) -> Date? {
+        calendar.date(
+            bySettingHour: task.deadlineTime.hour ?? 23, minute: task.deadlineTime.minute ?? 59, second: 0, of: occurrence.date
+        )
+    }
+    
     static func state(
         for occurrence: Occurrence,
         task: Task,
@@ -21,11 +27,7 @@ enum OccurrenceRules {
         
         let startOfDay = calendar.startOfDay(for: occurrence.date)
         
-        guard let deadline = calendar.date(
-            bySettingHour: task.deadlineTime.hour ?? 23,
-            minute: task.deadlineTime.minute ?? 59,
-            second: 0, of: occurrence.date
-        ) else {
+        guard let deadline = deadline(for: occurrence, task: task, calendar: calendar) else {
             return .expired
         }
         

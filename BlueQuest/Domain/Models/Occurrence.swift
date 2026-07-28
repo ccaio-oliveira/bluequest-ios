@@ -19,13 +19,3 @@ enum OccurrenceState: Equatable {
     case completed
     case expired
 }
-
-func occurrenceState(
-    for occurrence: Occurrence,
-    task: Task,
-    isCompleted: Bool,
-    now: Date
-) -> OccurrenceState {
-    // ainda vazio - Fase 2
-    return .available
-}

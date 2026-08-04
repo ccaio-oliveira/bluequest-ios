@@ -11,6 +11,7 @@ import UIKit
 final class HomeViewController: UIViewController {
     private let viewModel: HomeViewModel
     
+    private let headerView = HomeHeaderView()
     private let scrollView = UIScrollView()
     private let contentStack = UIStackView()
     private let tasksStack = UIStackView()
@@ -27,7 +28,6 @@ final class HomeViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .bqBg0
-        title = "Hoje"
         
         setupLayout()
         renderTasks()
@@ -35,6 +35,11 @@ final class HomeViewController: UIViewController {
         viewModel.onChange = { [weak self] in
             self?.renderTasks()
         }
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        navigationController?.setNavigationBarHidden(true, animated: animated)
     }
     
     private func setupLayout() {
@@ -49,6 +54,7 @@ final class HomeViewController: UIViewController {
         
         tasksStack.axis = .vertical
         tasksStack.spacing = BQSpacing.sp2
+        contentStack.addArrangedSubview(headerView)
         contentStack.addArrangedSubview(tasksStack)
         
         let content = scrollView.contentLayoutGuide
@@ -70,6 +76,7 @@ final class HomeViewController: UIViewController {
     }
     
     private func renderTasks() {
+        headerView.configure(with: viewModel.header)
         tasksStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
         
         for row in viewModel.rows {

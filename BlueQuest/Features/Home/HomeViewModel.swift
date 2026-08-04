@@ -10,6 +10,7 @@ import Foundation
 @MainActor
 final class HomeViewModel {
     private(set) var rows: [HomeTaskRow] = []
+    private(set) var header = HomeHeader(dateText: "", points: 0, completedCount: 0, doableCount: 0)
     var onChange: (() -> Void)?
     
     private let calendar = Calendar(identifier: .gregorian)
@@ -19,6 +20,13 @@ final class HomeViewModel {
     private let tasks: [Task]
     private let occurrences: [Occurrence]
     private var completions: [Completion]
+    
+    private lazy var dayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "pt_BR")
+        formatter.dateFormat = "EEEE, d MMM"
+        return formatter
+    }()
     
     init() {
         let today = calendar.date(from: DateComponents(year: 2026, month: 8, day: 4))!
@@ -90,6 +98,19 @@ final class HomeViewModel {
                 hasPhoto: task.requiresPhoto != .none
             )
         }
+        
+        rebuildHeader()
+    }
+    
+    private func rebuildHeader() {
+        let raw = dayFormatter.string(from: now)
+            .replacingOccurrences(of: "-feira", with: "")
+            .replacingOccurrences(of: ".", with: "")
+        
+        let weekday = raw.prefix(1).uppercased() + raw.dropFirst()
+        let todayOccurrenceIDs = Set(occurrences.map(\.id))
+        
+        header = HomeHeader(dateText: "Hoje . \(weekday)", points: completions.filter { todayOccurrenceIDs.contains($0.occurrenceID) }.reduce(0) { $0 + $1.pointsAwarded }, completedCount: rows.filter { $0.state == .completed }.count, doableCount: rows.filter { $0.state != .future }.count)
     }
 }
 
@@ -100,4 +121,11 @@ struct HomeTaskRow: Equatable {
     let state: OccurrenceState
     let deadlineText: String
     let hasPhoto: Bool
+}
+
+struct HomeHeader: Equatable {
+    let dateText: String
+    let points: Int
+    let completedCount: Int
+    let doableCount: Int
 }

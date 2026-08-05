@@ -10,11 +10,13 @@ import UIKit
 
 final class HomeViewController: UIViewController {
     private let viewModel: HomeViewModel
-    
-    private let headerView = HomeHeaderView()
+
     private let scrollView = UIScrollView()
     private let contentStack = UIStackView()
     private let tasksStack = UIStackView()
+    private let headerView = HomeHeaderView()
+    private let challengesSectionLabel = UILabel()
+    private let challengesStack = UIStackView()
     
     init(viewModel: HomeViewModel) {
         self.viewModel = viewModel
@@ -52,10 +54,25 @@ final class HomeViewController: UIViewController {
         contentStack.translatesAutoresizingMaskIntoConstraints = false
         scrollView.addSubview(contentStack)
         
+        challengesSectionLabel.font = BQFont.body(BQTypeScale.micro, weight: .semibold)
+        challengesSectionLabel.textColor = .bqText3
+        challengesSectionLabel.attributedText = NSAttributedString(
+            string: "SEUS DESAFIOS",
+            attributes: [.kern: BQTypeScale.micro * 0.08]
+        )
+        
+        challengesStack.axis = .vertical
+        challengesStack.spacing = BQSpacing.sp2
+        
+        let challengesSection = UIStackView(arrangedSubviews: [challengesSectionLabel, challengesStack])
+        challengesSection.axis = .vertical
+        challengesSection.spacing = 10
+        
         tasksStack.axis = .vertical
         tasksStack.spacing = BQSpacing.sp2
         contentStack.addArrangedSubview(headerView)
         contentStack.addArrangedSubview(tasksStack)
+        contentStack.addArrangedSubview(challengesSection)
         
         let content = scrollView.contentLayoutGuide
         let frame = scrollView.frameLayoutGuide
@@ -77,6 +94,7 @@ final class HomeViewController: UIViewController {
     
     private func renderTasks() {
         headerView.configure(with: viewModel.header)
+        challengesStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
         tasksStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
         
         for row in viewModel.rows {
@@ -86,6 +104,12 @@ final class HomeViewController: UIViewController {
                 self?.viewModel.completeTask(occurrenceID: row.occurrenceID)
             }
             tasksStack.addArrangedSubview(card)
+        }
+        
+        for challenge in viewModel.challenges {
+            let card = ChallengeCardView()
+            card.configure(with: challenge)
+            challengesStack.addArrangedSubview(card)
         }
     }
 }

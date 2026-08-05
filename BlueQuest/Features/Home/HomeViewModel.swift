@@ -11,6 +11,7 @@ import Foundation
 final class HomeViewModel {
     private(set) var rows: [HomeTaskRow] = []
     private(set) var header = HomeHeader(dateText: "", points: 0, completedCount: 0, doableCount: 0)
+    private(set) var challenges: [HomeChallengeRow] = []
     var onChange: (() -> Void)?
     
     private let calendar = Calendar(identifier: .gregorian)
@@ -20,11 +21,19 @@ final class HomeViewModel {
     private let tasks: [Task]
     private let occurrences: [Occurrence]
     private var completions: [Completion]
+    private let mockChallenges: [Challenge]
     
     private lazy var dayFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "pt_BR")
         formatter.dateFormat = "EEEE, d MMM"
+        return formatter
+    }()
+    
+    private lazy var dayMonthFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "pt_BR")
+        formatter.dateFormat = "d MMM"
         return formatter
     }()
     
@@ -48,9 +57,14 @@ final class HomeViewModel {
             Occurrence(id: 3, taskID: 3, date: today)
         ]
         
-         completions = [
+        completions = [
             Completion(id: 1, participantID: 1, occurrenceID: 1, date: now, pointsAwarded: 2, photoURL: nil)
-         ]
+        ]
+        
+        mockChallenges = [
+            Challenge(id: 1, name: "Projeto Verão", description: "", startDate: calendar.date(from: DateComponents(year: 2026, month: 8, day: 1))!, endDate: calendar.date(from: DateComponents(year: 2026, month: 8, day: 30))!, creatorUserID: 1),
+            Challenge(id: 2, name: "21 Dias de Estudos", description: "", startDate: calendar.date(from: DateComponents(year: 2026, month: 8, day: 10))!, endDate: calendar.date(from: DateComponents(year: 2026, month: 8, day: 31))!, creatorUserID: 2)
+        ]
         
         rebuildRows()
     }
@@ -100,6 +114,7 @@ final class HomeViewModel {
         }
         
         rebuildHeader()
+        rebuildChallenges()
     }
     
     private func rebuildHeader() {
@@ -111,6 +126,45 @@ final class HomeViewModel {
         let todayOccurrenceIDs = Set(occurrences.map(\.id))
         
         header = HomeHeader(dateText: "Hoje . \(weekday)", points: completions.filter { todayOccurrenceIDs.contains($0.occurrenceID) }.reduce(0) { $0 + $1.pointsAwarded }, completedCount: rows.filter { $0.state == .completed }.count, doableCount: rows.filter { $0.state != .future }.count)
+    }
+    
+    private func rebuildChallenges() {
+        let mockPoints = [1: 118, 2: 34]
+        let mockRanks: [Int: Int] = [1: 2]
+        let mockParticipants = [
+            1: ["Ana", "Fernanda", "Caio", "João"],
+            2: ["Bia", "Leo"]
+        ]
+        
+        challenges = mockChallenges.enumerated().map { index, challenge in
+            let state = ChallengeRules.state(for: challenge, now: now, calendar: calendar)
+            
+            return HomeChallengeRow(
+                id: challenge.id,
+                name: challenge.name,
+                periodText: periodText(for: challenge),
+                day: ChallengeRules.currentDay(for: challenge, now: now, calendar: calendar),
+                totalDays: ChallengeRules.totalDays(for: challenge, calendar: calendar),
+                points: (mockPoints[challenge.id] ?? 0) + (challenge.id == 1 ? header.points : 0),
+                rank: mockRanks[challenge.id],
+                participantNames: mockParticipants[challenge.id] ?? [],
+                state: state,
+                isHero: index == 0
+            )
+        }
+    }
+    
+    private func periodText(for challenge: Challenge) -> String {
+        let sameMonth = calendar.isDate(challenge.startDate, equalTo: challenge.endDate, toGranularity: .month)
+        let end = dayMonthFormatter.string(from: challenge.endDate).replacingOccurrences(of: ".", with: "")
+        
+        if sameMonth {
+            let startDay = calendar.component(.day, from: challenge.startDate)
+            return "\(startDay)-\(end))"
+        } else {
+            let start = dayMonthFormatter.string(from: challenge.startDate).replacingOccurrences(of: ".", with: "")
+            return "\(start) – \(end)"
+        }
     }
 }
 
@@ -128,4 +182,17 @@ struct HomeHeader: Equatable {
     let points: Int
     let completedCount: Int
     let doableCount: Int
+}
+
+struct HomeChallengeRow: Equatable {
+    let id: Int
+    let name: String
+    let periodText: String
+    let day: Int
+    let totalDays: Int
+    let points: Int
+    let rank: Int?
+    let participantNames: [String]
+    let state: ChallengeState
+    let isHero: Bool
 }

@@ -36,6 +36,10 @@ extension UIColor {
     static let bqGreenDim = UIColor(red: 0.036, green: 0.193, blue: 0.107, alpha: 1)   // oklch(0.28 0.06 155)
     static let bqRed = UIColor(red: 0.925, green: 0.358, blue: 0.341, alpha: 1)        // oklch(0.66 0.18 25)
     static let bqRedDim = UIColor(red: 0.272, green: 0.096, blue: 0.088, alpha: 1)     // oklch(0.28 0.07 25)
+    
+    // Paleta de avatares (Avatar.jsx)
+    static let bqAvatarPurple = UIColor(red: 0.780, green: 0.490, blue: 0.846, alpha: 1)  // oklch(0.7 0.15 320)
+    static let bqAvatarCyan = UIColor(red: 0.000, green: 0.724, blue: 0.764, alpha: 1)    // oklch(0.7 0.15 200)
 
     // Aliases semânticos
     static let bqStateFuture = bqText3

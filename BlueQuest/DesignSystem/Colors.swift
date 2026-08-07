@@ -40,6 +40,10 @@ extension UIColor {
     // Paleta de avatares (Avatar.jsx)
     static let bqAvatarPurple = UIColor(red: 0.780, green: 0.490, blue: 0.846, alpha: 1)  // oklch(0.7 0.15 320)
     static let bqAvatarCyan = UIColor(red: 0.000, green: 0.724, blue: 0.764, alpha: 1)    // oklch(0.7 0.15 200)
+    
+    // Medalhas do ranking (RankingRow.jsx)
+    static let bqMedalSilver = UIColor(red: 0.725, green: 0.746, blue: 0.769, alpha: 1)  // oklch(0.8 0.01 250)
+    static let bqMedalBronze = UIColor(red: 0.698, green: 0.466, blue: 0.267, alpha: 1)  // oklch(0.62 0.1 60)
 
     // Aliases semânticos
     static let bqStateFuture = bqText3

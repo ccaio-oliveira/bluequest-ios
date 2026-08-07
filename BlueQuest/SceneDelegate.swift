@@ -16,12 +16,13 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         guard let windowScene = (scene as? UIWindowScene) else { return }
         
-        let navigationController = UINavigationController()
+        let navigationController = BQNavigationController()
         let coordinator = AppCoordinator(navigationController: navigationController)
         self.appCoordinator = coordinator
         coordinator.start()
         
         let window = UIWindow(windowScene: windowScene)
+        window.overrideUserInterfaceStyle = .dark
         window.rootViewController = navigationController
         window.makeKeyAndVisible()
         self.window = window

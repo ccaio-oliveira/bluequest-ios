@@ -9,6 +9,8 @@ import Foundation
 import UIKit
 
 final class HomeViewController: UIViewController {
+    var onSelectChallenge: ((Int) -> Void)?
+    
     private let viewModel: HomeViewModel
 
     private let scrollView = UIScrollView()
@@ -124,6 +126,9 @@ final class HomeViewController: UIViewController {
         for challenge in viewModel.challenges {
             let card = ChallengeCardView()
             card.configure(with: challenge)
+            card.onTap = { [weak self] in
+                self?.onSelectChallenge?(challenge.id)
+            }
             challengesStack.addArrangedSubview(card)
         }
     }

@@ -12,7 +12,9 @@ final class HomeViewModel {
     private(set) var rows: [HomeTaskRow] = []
     private(set) var header = HomeHeader(dateText: "", points: 0, completedCount: 0, doableCount: 0)
     private(set) var challenges: [HomeChallengeRow] = []
+    
     var onChange: (() -> Void)?
+    var onPointsAwarded: ((Int) -> Void)?
     
     private let calendar = Calendar(identifier: .gregorian)
     private let now: Date
@@ -86,6 +88,7 @@ final class HomeViewModel {
         completions.append(newCompletion)
         rebuildRows()
         onChange?()
+        onPointsAwarded?(task.points)
     }
     
     private lazy var timeFormatter: DateFormatter = {
@@ -160,7 +163,7 @@ final class HomeViewModel {
         
         if sameMonth {
             let startDay = calendar.component(.day, from: challenge.startDate)
-            return "\(startDay)-\(end))"
+            return "\(startDay)-\(end)"
         } else {
             let start = dayMonthFormatter.string(from: challenge.startDate).replacingOccurrences(of: ".", with: "")
             return "\(start) – \(end)"

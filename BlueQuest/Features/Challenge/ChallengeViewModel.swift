@@ -7,43 +7,13 @@
 
 import Foundation
 
-struct ChallengeRankingRow: Equatable {
-    let position: Int
-    let name: String
-    let points: Int
-    let isYou: Bool
-}
-
-struct ChallengeHeader: Equatable {
-    let name: String
-    let subtitle: String
-    let day: Int
-    let totalDays: Int
-    let remainingText: String
-}
-
-struct ChallengePersonalStats: Equatable {
-    let points: Int
-    let position: Int
-    let completedCount: Int
-    let streakDays: Int
-    let expiredCount: Int
-}
-
-struct ChallengeParticipantRow: Equatable {
-    let name: String
-    let joinedText: String
-    let points: Int
-    let isCreator: Bool
-    let isYou: Bool
-}
-
 @MainActor
 final class ChallengeViewModel {
     private(set) var header: ChallengeHeader
     private(set) var ranking: [ChallengeRankingRow] = []
     private(set) var personalStats = ChallengePersonalStats(points: 0, position: 0, completedCount: 0, streakDays: 0, expiredCount: 0)
     private(set) var participantRows: [ChallengeParticipantRow] = []
+    private(set) var taskRows: [ChallengeTaskRow] = []
     
     private let calendar = Calendar(identifier: .gregorian)
     private let now: Date
@@ -53,6 +23,8 @@ final class ChallengeViewModel {
     private let participants: [Participant]
     private let userNames: [Int: String]
     private let completions: [Completion]
+    
+    private let challengeTasks: [Task]
     
     private lazy var joinedFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -86,6 +58,12 @@ final class ChallengeViewModel {
         completions = Self.makeCompletions(totals: [1: 218, 2: 230, 3: 194, 4: 182])
         
         header = ChallengeHeader(name: "", subtitle: "", day: 0, totalDays: 0, remainingText: "")
+        
+        challengeTasks = [
+            Task(id: 1, challengeID: challengeID, name: "Beber 2L de água", description: nil, points: 2, recurrence: .daily, deadlineTime: DateComponents(hour: 23, minute: 59), requiresPhoto: .none),
+            Task(id: 2, challengeID: challengeID, name: "Fazer treino", description: nil, points: 5, recurrence: .weekdays([.monday, .tuesday, .thursday, .friday]), deadlineTime: DateComponents(hour: 22, minute: 0), requiresPhoto: .optional),
+            Task(id: 3, challengeID: challengeID, name: "Cardio", description: nil, points: 3, recurrence: .weekdays([.monday, .wednesday, .friday]), deadlineTime: DateComponents(hour: 22, minute: 0), requiresPhoto: .none)
+        ]
         
         rebuild()
     }
@@ -131,6 +109,19 @@ final class ChallengeViewModel {
             if lhs.isCreator != rhs.isCreator { return lhs.isCreator }
             return lhs.points > rhs.points
         }
+        
+        taskRows = challengeTasks.map { task in
+            ChallengeTaskRow(
+                card: TaskCardModel(
+                    taskName: task.name,
+                    points: task.points,
+                    state: .available,
+                    deadlineText: deadlineText(for: task),
+                    hasPhoto: task.requiresPhoto != .none
+                ),
+                recurrenceText: "\(task.name.lowercased()) \(recurrenceText(for: task.recurrence))"
+            )
+        }
     }
     
     private static func makeCompletions(totals: [Int: Int]) -> [Completion] {
@@ -155,4 +146,71 @@ final class ChallengeViewModel {
         
         return result
     }
+    
+    private func deadlineText(for task: Task) -> String {
+        guard let date = calendar.date(
+            bySettingHour: task.deadlineTime.hour ?? 23,
+            minute: task.deadlineTime.minute ?? 59,
+            second: 0,
+            of: now
+        ) else { return "" }
+        
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        formatter.dateStyle = .none
+        return formatter.string(from: date)
+    }
+    
+    private func recurrenceText(for recurrence: Recurrence) -> String {
+        switch recurrence {
+        case .once:
+            return "uma vez"
+        case .daily:
+            return "diária"
+        case .weekdays(let days):
+            let names: [Weekday: String] = [
+                .sunday: "dom", .monday: "seg", .tuesday: "ter", .wednesday: "qua", .thursday: "qui", .friday: "sex", .saturday: "sáb"
+            ]
+            return days
+                .sorted { $0.rawValue < $1.rawValue }
+                .compactMap { names[$0] }
+                .joined(separator: "/")
+        }
+    }
+}
+
+struct ChallengeRankingRow: Equatable {
+    let position: Int
+    let name: String
+    let points: Int
+    let isYou: Bool
+}
+
+struct ChallengeHeader: Equatable {
+    let name: String
+    let subtitle: String
+    let day: Int
+    let totalDays: Int
+    let remainingText: String
+}
+
+struct ChallengePersonalStats: Equatable {
+    let points: Int
+    let position: Int
+    let completedCount: Int
+    let streakDays: Int
+    let expiredCount: Int
+}
+
+struct ChallengeParticipantRow: Equatable {
+    let name: String
+    let joinedText: String
+    let points: Int
+    let isCreator: Bool
+    let isYou: Bool
+}
+
+struct ChallengeTaskRow: Equatable {
+    let card: TaskCardModel
+    let recurrenceText: String
 }

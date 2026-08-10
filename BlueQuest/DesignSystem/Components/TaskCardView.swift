@@ -48,7 +48,7 @@ final class TaskCardView: UIView {
         alpha = (state == .available) ? 1.0 : 0.6
     }
     
-    private func metaText(for row: HomeTaskRow) -> String {
+    private func metaText(for row: TaskCardModel) -> String {
         switch row.state {
         case .expired: "Expirou às \(row.deadlineText)"
         case .completed: "Concluída"

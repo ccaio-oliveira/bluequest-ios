@@ -187,14 +187,35 @@ final class ChallengeViewController: UIViewController {
                 return view
             })
             tabContentStack.addArrangedSubview(group)
-        default:
-            let placeholder = UILabel()
-            placeholder.text = "Em construção"
-            placeholder.font = BQFont.body(BQTypeScale.caption)
-            placeholder.textColor = .bqText3
-            placeholder.textAlignment = .center
+        case 3:
+            let intro = UILabel()
+            intro.text = "Tarefas configuradas neste desafio"
+            intro.font = BQFont.body(12)
+            intro.textColor = .bqText3
+            tabContentStack.addArrangedSubview(intro)
             
-            tabContentStack.addArrangedSubview(placeholder)
+            for row in viewModel.taskRows {
+                let card = TaskCardView()
+                card.configure(with: row.card)
+                tabContentStack.addArrangedSubview(card)
+            }
+            
+            let recurrences = UILabel()
+            recurrences.text = "Recorrências: " + viewModel.taskRows
+                .map(\.recurrenceText)
+                .joined(separator: " · ")
+            recurrences.font = BQFont.body(12)
+            recurrences.textColor = .bqText3
+            recurrences.numberOfLines = 0
+            tabContentStack.addArrangedSubview(recurrences)
+            
+            tabContentStack.spacing = switch segmented.selectedIndex {
+            case 0: 2
+            case 3: BQSpacing.sp2
+            default: BQSpacing.sp3
+            }
+        default:
+            break
         }
     }
     

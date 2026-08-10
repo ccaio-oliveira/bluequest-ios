@@ -53,14 +53,10 @@ final class HomeViewModel {
             Task(id: 3, challengeID: 1, name: "Cardio", points: 3, recurrence: .daily, deadlineTime: DateComponents(hour: 20, minute: 0), requiresPhoto: .none)
         ]
         
-        occurrences = [
-            Occurrence(id: 1, taskID: 1, date: today),
-            Occurrence(id: 2, taskID: 2, date: today),
-            Occurrence(id: 3, taskID: 3, date: today)
-        ]
+        occurrences = tasks.map { Occurrence(taskID: $0.id, date: today) }
         
         completions = [
-            Completion(id: 1, participantID: 1, occurrenceID: 1, date: now, pointsAwarded: 2, photoURL: nil)
+            Completion(id: 1, participantID: 1, taskID: 1,occurrenceDate: today, completedAt: now, pointsAwarded: 2, photoURL: nil)
         ]
         
         mockChallenges = [
@@ -71,11 +67,11 @@ final class HomeViewModel {
         rebuildRows()
     }
     
-    func completeTask(occurrenceID: Int) {
-        guard let occurrence = occurrences.first(where: { $0.id == occurrenceID }),
+    func completeTask(taskID: Int) {
+        guard let occurrence = occurrences.first(where: { $0.taskID == taskID }),
               let task = tasks.first(where: { $0.id == occurrence.taskID }) else { return }
         
-        let isCompleted = completions.contains { $0.occurrenceID == occurrenceID }
+        let isCompleted = occurrence.isCompleted(in: completions, calendar: calendar)
         
         do {
             try CompletionRules.validateCompletion(occurrence: occurrence, task: task, isCompleted: isCompleted, requestingUserIsParticipant: true, now: now, calendar: calendar)
@@ -83,7 +79,7 @@ final class HomeViewModel {
             return // Fase futura: expor esse erro pra UI mostrar uma mensagem
         }
         
-        let newCompletion = Completion(id: completions.count + 1, participantID: participant.id, occurrenceID: occurrenceID, date: now, pointsAwarded: task.points, photoURL: nil)
+        let newCompletion = Completion(id: completions.count + 1, participantID: participant.id, taskID: taskID, occurrenceDate: occurrence.date, completedAt: now, pointsAwarded: task.points, photoURL: nil)
         
         completions.append(newCompletion)
         rebuildRows()
@@ -101,13 +97,13 @@ final class HomeViewModel {
     private func rebuildRows() {
         rows = occurrences.map { occurrence in
             let task = tasks.first { $0.id == occurrence.taskID }!
-            let isCompleted = completions.contains { $0.occurrenceID == occurrence.id }
+            let isCompleted = occurrence.isCompleted(in: completions, calendar: calendar)
             let state = OccurrenceRules.state(for: occurrence, task: task, isCompleted: isCompleted, now: now, calendar: calendar)
             
             let deadline = OccurrenceRules.deadline(for: occurrence, task: task, calendar: calendar)
             
             return HomeTaskRow(
-                occurrenceID: occurrence.id,
+                taskID: occurrence.taskID,
                 card: TaskCardModel(
                     taskName: task.name,
                     points: task.points,
@@ -128,9 +124,8 @@ final class HomeViewModel {
             .replacingOccurrences(of: ".", with: "")
         
         let weekday = raw.prefix(1).uppercased() + raw.dropFirst()
-        let todayOccurrenceIDs = Set(occurrences.map(\.id))
         
-        header = HomeHeader(dateText: "Hoje . \(weekday)", points: completions.filter { todayOccurrenceIDs.contains($0.occurrenceID) }.reduce(0) { $0 + $1.pointsAwarded }, completedCount: rows.filter { $0.card.state == .completed }.count, doableCount: rows.filter { $0.card.state != .future }.count)
+        header = HomeHeader(dateText: "Hoje . \(weekday)", points: completions.filter { calendar.isDate($0.occurrenceDate, inSameDayAs: now) }.reduce(0) { $0 + $1.pointsAwarded }, completedCount: rows.filter { $0.card.state == .completed }.count, doableCount: rows.filter { $0.card.state != .future }.count)
     }
     
     private func rebuildChallenges() {
@@ -174,7 +169,7 @@ final class HomeViewModel {
 }
 
 struct HomeTaskRow: Equatable {
-    let occurrenceID: Int
+    let taskID: Int
     let card: TaskCardModel
 }
 

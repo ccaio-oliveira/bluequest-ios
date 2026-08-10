@@ -118,7 +118,7 @@ final class HomeViewController: UIViewController {
             let card = TaskCardView()
             card.configure(with: row.card)
             card.onComplete = { [weak self] in
-                self?.viewModel.completeTask(occurrenceID: row.occurrenceID)
+                self?.viewModel.completeTask(taskID: row.taskID)
             }
             tasksStack.addArrangedSubview(card)
         }

@@ -55,7 +55,11 @@ final class ChallengeViewModel {
         
         userNames = [1: "Fernanda", 10: "Ana", 30: "Caio", 40: "João"]
         
-        completions = Self.makeCompletions(totals: [1: 218, 2: 230, 3: 194, 4: 182])
+        completions = Self.makeCompletions(
+            totals: [1: 218, 2: 230, 3: 194, 4: 182],
+            startDate: challenge.startDate,
+            calendar: calendar
+        )
         
         header = ChallengeHeader(name: "", subtitle: "", day: 0, totalDays: 0, remainingText: "")
         
@@ -124,8 +128,8 @@ final class ChallengeViewModel {
         }
     }
     
-    private static func makeCompletions(totals: [Int: Int]) -> [Completion] {
-        let taskPoints = [5, 3, 2]
+    private static func makeCompletions(totals: [Int: Int], startDate: Date, calendar: Calendar) -> [Completion] {
+        let taskPoints = [(id: 1, points: 5), (id: 2, points: 3), (id: 3, points: 2)]
         var result: [Completion] = []
         var nextID = 1
         
@@ -134,9 +138,20 @@ final class ChallengeViewModel {
             var index = 0
             
             while remaining > 0 {
-                let points = min(taskPoints[index % taskPoints.count], remaining)
+                let task = taskPoints[index % taskPoints.count]
+                let points = min(task.points, remaining)
+                let dayOffset = index / taskPoints.count
+                let date = calendar.date(byAdding: .day, value: dayOffset, to: startDate) ?? startDate
                 
-                result.append(Completion(id: nextID, participantID: participantID, occurrenceID: nextID, date: Date(), pointsAwarded: points, photoURL: nil))
+                result.append(Completion(
+                    id: nextID,
+                    participantID: participantID,
+                    taskID: task.id,
+                    occurrenceDate: date,
+                    completedAt: date,
+                    pointsAwarded: points,
+                    photoURL: nil)
+                )
                 
                 remaining -= points
                 nextID += 1

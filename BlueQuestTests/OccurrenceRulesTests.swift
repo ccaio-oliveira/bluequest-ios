@@ -28,7 +28,7 @@ final class OccurrenceRulesTests: XCTestCase {
     
     func test_whenCompleted_returnsCompleted() {
         let occurrenceDate = calendar.date(from: DateComponents(year: 2026, month: 8, day: 4))!
-        let occurrence = Occurrence(id: 1, taskID: 1, date: occurrenceDate)
+        let occurrence = Occurrence(taskID: 1, date: occurrenceDate)
         let now = calendar.date(from: DateComponents(year: 2026, month: 8, day: 4, hour: 23, minute: 0))!
         
         let state = OccurrenceRules.state(for: occurrence, task: makeTask(), isCompleted: true, now: now, calendar: calendar)
@@ -38,7 +38,7 @@ final class OccurrenceRulesTests: XCTestCase {
     
     func test_whenAvailable_returnsAvailable() {
         let occurrenceDate = calendar.date(from: DateComponents(year: 2026, month: 8, day: 4))!
-        let occurrence = Occurrence(id: 1, taskID: 1, date: occurrenceDate)
+        let occurrence = Occurrence(taskID: 1, date: occurrenceDate)
         let now = calendar.date(from: DateComponents(year: 2026, month: 8, day: 4, hour: 12, minute: 0))!
         
         let state = OccurrenceRules.state(for: occurrence, task: makeTask(), isCompleted: false, now: now, calendar: calendar)
@@ -48,7 +48,7 @@ final class OccurrenceRulesTests: XCTestCase {
     
     func test_whenExpired_returnsExpired() {
         let occurrenceDate = calendar.date(from: DateComponents(year: 2026, month: 8, day: 4))!
-        let occurrence = Occurrence(id: 1, taskID: 1, date: occurrenceDate)
+        let occurrence = Occurrence(taskID: 1, date: occurrenceDate)
         let now = calendar.date(from: DateComponents(year: 2026, month: 8, day: 5, hour: 23, minute: 0))!
         
         let state = OccurrenceRules.state(for: occurrence, task: makeTask(), isCompleted: false, now: now, calendar: calendar)
@@ -58,7 +58,7 @@ final class OccurrenceRulesTests: XCTestCase {
     
     func test_whenFuture_returnsFuture() {
         let occurrenceDate = calendar.date(from: DateComponents(year: 2026, month: 8, day: 4))!
-        let occurrence = Occurrence(id: 1, taskID: 1, date: occurrenceDate)
+        let occurrence = Occurrence(taskID: 1, date: occurrenceDate)
         let now = calendar.date(from: DateComponents(year: 2026, month: 8, day: 3, hour: 23, minute: 0))!
         
         let state = OccurrenceRules.state(for: occurrence, task: makeTask(), isCompleted: false, now: now, calendar: calendar)
@@ -68,7 +68,7 @@ final class OccurrenceRulesTests: XCTestCase {
     
     func test_atExactDeadline_returnsAvailable() {
         let occurrenceDate = calendar.date(from: DateComponents(year: 2026, month: 8, day: 4))!
-        let occurrence = Occurrence(id: 1, taskID: 1, date: occurrenceDate)
+        let occurrence = Occurrence(taskID: 1, date: occurrenceDate)
         let now = calendar.date(from: DateComponents(year: 2026, month: 8, day: 4, hour: 22, minute: 0, second: 0))!
 
         let state = OccurrenceRules.state(for: occurrence, task: makeTask(), isCompleted: false, now: now, calendar: calendar)
@@ -78,7 +78,7 @@ final class OccurrenceRulesTests: XCTestCase {
 
     func test_oneSecondAfterDeadline_returnsExpired() {
         let occurrenceDate = calendar.date(from: DateComponents(year: 2026, month: 8, day: 4))!
-        let occurrence = Occurrence(id: 1, taskID: 1, date: occurrenceDate)
+        let occurrence = Occurrence(taskID: 1, date: occurrenceDate)
         let now = calendar.date(from: DateComponents(year: 2026, month: 8, day: 4, hour: 22, minute: 0, second: 1))!
 
         let state = OccurrenceRules.state(for: occurrence, task: makeTask(), isCompleted: false, now: now, calendar: calendar)
@@ -88,7 +88,7 @@ final class OccurrenceRulesTests: XCTestCase {
     
     func test_whenNotParticipant_throwsUserNotParticipant() {
         let occurrenceDate = calendar.date(from: DateComponents(year: 2026, month: 8, day: 4))!
-        let occurrence = Occurrence(id: 1, taskID: 1, date: occurrenceDate)
+        let occurrence = Occurrence(taskID: 1, date: occurrenceDate)
         let now = calendar.date(from: DateComponents(year: 2026, month: 8, day: 4, hour: 12, minute: 0))!
         
         XCTAssertThrowsError(
@@ -107,7 +107,7 @@ final class OccurrenceRulesTests: XCTestCase {
     
     func test_whenParticipant_throwsNothing() {
         let occurrenceDate = calendar.date(from: DateComponents(year: 2026, month: 8, day: 4))!
-        let occurrence = Occurrence(id: 1, taskID: 1, date: occurrenceDate)
+        let occurrence = Occurrence(taskID: 1, date: occurrenceDate)
         let now = calendar.date(from: DateComponents(year: 2026, month: 8, day: 4, hour: 12, minute: 0))!
         
         XCTAssertNoThrow(
@@ -124,7 +124,7 @@ final class OccurrenceRulesTests: XCTestCase {
     
     func test_whenParticipant_throwsCompleted() {
         let occurrenceDate = calendar.date(from: DateComponents(year: 2026, month: 8, day: 4))!
-        let occurrence = Occurrence(id: 1, taskID: 1, date: occurrenceDate)
+        let occurrence = Occurrence(taskID: 1, date: occurrenceDate)
         let now = calendar.date(from: DateComponents(year: 2026, month: 8, day: 4, hour: 12, minute: 0))!
         
         XCTAssertThrowsError(
@@ -143,7 +143,7 @@ final class OccurrenceRulesTests: XCTestCase {
     
     func test_whenParticipant_throwsExpired() {
         let occurrenceDate = calendar.date(from: DateComponents(year: 2026, month: 8, day: 4))!
-        let occurrence = Occurrence(id: 1, taskID: 1, date: occurrenceDate)
+        let occurrence = Occurrence(taskID: 1, date: occurrenceDate)
         let now = calendar.date(from: DateComponents(year: 2026, month: 8, day: 4, hour: 22, minute: 1))!
         
         XCTAssertThrowsError(

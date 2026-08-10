@@ -16,7 +16,7 @@ final class RankingRulesTests: XCTestCase {
     }
     
     private func makeCompletion(id: Int, participantID: Int, points: Int) -> Completion {
-        Completion(id: id, participantID: participantID, occurrenceID: 1, date: Date(), pointsAwarded: points, photoURL: nil)
+        Completion(id: id, participantID: participantID, taskID: 1, occurrenceDate: Date(), completedAt: Date(), pointsAwarded: points, photoURL: nil)
     }
     
     func test_withNoCompletions_allParticipantsHaveZeroPoints() {

@@ -108,11 +108,13 @@ final class HomeViewModel {
             
             return HomeTaskRow(
                 occurrenceID: occurrence.id,
-                taskName: task.name,
-                points: task.points,
-                state: state,
-                deadlineText: deadline.map { timeFormatter.string(from: $0) } ?? "",
-                hasPhoto: task.requiresPhoto != .none
+                card: TaskCardModel(
+                    taskName: task.name,
+                    points: task.points,
+                    state: state,
+                    deadlineText: deadline.map { timeFormatter.string(from: $0) } ?? "",
+                    hasPhoto: task.requiresPhoto != .none
+                )
             )
         }
         
@@ -128,7 +130,7 @@ final class HomeViewModel {
         let weekday = raw.prefix(1).uppercased() + raw.dropFirst()
         let todayOccurrenceIDs = Set(occurrences.map(\.id))
         
-        header = HomeHeader(dateText: "Hoje . \(weekday)", points: completions.filter { todayOccurrenceIDs.contains($0.occurrenceID) }.reduce(0) { $0 + $1.pointsAwarded }, completedCount: rows.filter { $0.state == .completed }.count, doableCount: rows.filter { $0.state != .future }.count)
+        header = HomeHeader(dateText: "Hoje . \(weekday)", points: completions.filter { todayOccurrenceIDs.contains($0.occurrenceID) }.reduce(0) { $0 + $1.pointsAwarded }, completedCount: rows.filter { $0.card.state == .completed }.count, doableCount: rows.filter { $0.card.state != .future }.count)
     }
     
     private func rebuildChallenges() {
@@ -173,11 +175,7 @@ final class HomeViewModel {
 
 struct HomeTaskRow: Equatable {
     let occurrenceID: Int
-    let taskName: String
-    let points: Int
-    let state: OccurrenceState
-    let deadlineText: String
-    let hasPhoto: Bool
+    let card: TaskCardModel
 }
 
 struct HomeHeader: Equatable {

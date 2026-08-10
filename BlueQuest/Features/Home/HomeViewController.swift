@@ -116,7 +116,7 @@ final class HomeViewController: UIViewController {
         
         for row in viewModel.rows {
             let card = TaskCardView()
-            card.configure(with: row)
+            card.configure(with: row.card)
             card.onComplete = { [weak self] in
                 self?.viewModel.completeTask(occurrenceID: row.occurrenceID)
             }

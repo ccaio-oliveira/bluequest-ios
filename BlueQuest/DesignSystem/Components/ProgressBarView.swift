@@ -21,7 +21,20 @@ final class ProgressBarView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
     
-    func configure(value: Int, total: Int) {
+    enum Tone {
+        case primary, points
+        
+        var color: UIColor {
+            switch self {
+            case .primary: .bqBlueBright
+            case .points: .bqAmber
+            }
+        }
+    }
+    
+    func configure(value: Int, total: Int, tone: Tone = .primary) {
+        fillView.backgroundColor = tone.color
+        
         let progress = total > 0 ? min(max(CGFloat(value) / CGFloat(total), 0), 1) : 0
         
         fillWidthConstraint?.isActive = false

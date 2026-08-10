@@ -146,6 +146,7 @@ final class ChallengeViewController: UIViewController {
     
     private func renderTabContent() {
         tabContentStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        tabContentStack.spacing = (segmented.selectedIndex == 0) ? 2 : BQSpacing.sp3
         
         switch segmented.selectedIndex {
         case 0:
@@ -155,6 +156,37 @@ final class ChallengeViewController: UIViewController {
                 view.configure(with: row)
                 tabContentStack.addArrangedSubview(view)
             }
+        case 1:
+            let stats = viewModel.personalStats
+            let firstRow = UIStackView(arrangedSubviews: [
+                StatTileView(icon: "bolt.fill", value: "\(stats.points)", label: "pontos", tone: .points),
+                StatTileView(icon: "trophy.fill", value: "\(stats.position)º", label: "posição", tone: .primary)
+            ])
+            
+            firstRow.axis = .horizontal
+            firstRow.spacing = BQSpacing.sp2
+            firstRow.distribution = .fillEqually
+            
+            let secondRow = UIStackView(arrangedSubviews: [
+                StatTileView(icon: "checkmark.circle.fill", value: "\(stats.completedCount)", label: "tarefas concluídas"),
+                StatTileView(icon: "flame.fill", value: "\(stats.streakDays)", label: "dias seguidos")
+            ])
+            secondRow.axis = .horizontal
+            secondRow.spacing = BQSpacing.sp2
+            secondRow.distribution = .fillEqually
+            
+            tabContentStack.addArrangedSubview(firstRow)
+            tabContentStack.addArrangedSubview(secondRow)
+            
+            tabContentStack.addArrangedSubview(makeUsageCard(stats: stats))
+        case 2:
+            let group = ListGroupView()
+            group.setRows(viewModel.participantRows.map { row in
+                let view = ParticipantRowView()
+                view.configure(with: row)
+                return view
+            })
+            tabContentStack.addArrangedSubview(group)
         default:
             let placeholder = UILabel()
             placeholder.text = "Em construção"
@@ -164,6 +196,45 @@ final class ChallengeViewController: UIViewController {
             
             tabContentStack.addArrangedSubview(placeholder)
         }
+    }
+    
+    private func makeUsageCard(stats: ChallengePersonalStats) -> UIView {
+        let card = UIView()
+        card.backgroundColor = .bqBg1
+        card.layer.cornerRadius = BQRadius.medium
+        card.layer.borderWidth = 1
+        card.layer.borderColor = UIColor.bqStroke1.cgColor
+        
+        let title = UILabel()
+        title.text = "Aproveitamento do período"
+        title.font = BQFont.body(BQTypeScale.caption, weight: .semibold)
+        title.textColor = .bqText2
+        
+        let total = stats.completedCount + stats.expiredCount
+        let bar = ProgressBarView()
+        bar.configure(value: stats.completedCount, total: total, tone: .points)
+        
+        let caption = UILabel()
+        caption.text = "\(stats.completedCount) de \(total) ocorrências concluídas · \(stats.expiredCount) expiradas"
+        caption.font = BQFont.body(12)
+        caption.textColor = .bqText3
+        caption.numberOfLines = 0
+        
+        let stack = UIStackView(arrangedSubviews: [title, bar, caption])
+        stack.axis = .vertical
+        stack.spacing = 10
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        
+        card.addSubview(stack)
+        
+        NSLayoutConstraint.activate([
+            stack.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
+            stack.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16),
+            stack.topAnchor.constraint(equalTo: card.topAnchor, constant: 14),
+            stack.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -14)
+        ])
+        
+        return card
     }
     
     @objc private func handleBack() {

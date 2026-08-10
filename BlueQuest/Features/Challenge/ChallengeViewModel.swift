@@ -22,10 +22,28 @@ struct ChallengeHeader: Equatable {
     let remainingText: String
 }
 
+struct ChallengePersonalStats: Equatable {
+    let points: Int
+    let position: Int
+    let completedCount: Int
+    let streakDays: Int
+    let expiredCount: Int
+}
+
+struct ChallengeParticipantRow: Equatable {
+    let name: String
+    let joinedText: String
+    let points: Int
+    let isCreator: Bool
+    let isYou: Bool
+}
+
 @MainActor
 final class ChallengeViewModel {
     private(set) var header: ChallengeHeader
     private(set) var ranking: [ChallengeRankingRow] = []
+    private(set) var personalStats = ChallengePersonalStats(points: 0, position: 0, completedCount: 0, streakDays: 0, expiredCount: 0)
+    private(set) var participantRows: [ChallengeParticipantRow] = []
     
     private let calendar = Calendar(identifier: .gregorian)
     private let now: Date
@@ -35,6 +53,13 @@ final class ChallengeViewModel {
     private let participants: [Participant]
     private let userNames: [Int: String]
     private let completions: [Completion]
+    
+    private lazy var joinedFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "pt_BR")
+        formatter.dateFormat = "d MMM"
+        return formatter
+    }()
     
     init(challengeID: Int) {
         let calendar = self.calendar
@@ -82,6 +107,30 @@ final class ChallengeViewModel {
         let remaining = max(total - day, 0)
         
         header = ChallengeHeader(name: challenge.name, subtitle: "1-30 ago · \(participants.count) participantes", day: day, totalDays: total, remainingText: remaining == 0 ? "último dia" : "termina em \(remaining) dias")
+        
+        let myEntry = RankingRules.personalEntry(for: currentUserID, in: entries)
+        let myParticipantID = participants.first { $0.userID == currentUserID }?.id
+        
+        personalStats = ChallengePersonalStats(
+            points: myEntry?.points ?? 0,
+            position: myEntry?.position ?? 0,
+            completedCount: completions.filter { $0.participantID == myParticipantID }.count,
+            streakDays: 6,
+            expiredCount: 7
+        )
+        
+        participantRows = entries.map { entry in
+            ChallengeParticipantRow(
+                name: userNames[entry.participant.userID] ?? "-",
+                joinedText: joinedFormatter.string(from: entry.participant.joinedAt).replacingOccurrences(of: ".", with: ""),
+                points: entry.points,
+                isCreator: entry.participant.userID == challenge.creatorUserID,
+                isYou: entry.participant.userID == currentUserID
+            )
+        }.sorted { lhs, rhs in
+            if lhs.isCreator != rhs.isCreator { return lhs.isCreator }
+            return lhs.points > rhs.points
+        }
     }
     
     private static func makeCompletions(totals: [Int: Int]) -> [Completion] {

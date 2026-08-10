@@ -31,6 +31,15 @@ final class ChallengeCoordinator: Coordinator {
             self?.onFinish?()
         }
         
+        viewController.onInvite = { [weak self] in
+            self?.showInviteSheet()
+        }
+        
         navigationController.pushViewController(viewController, animated: true)
+    }
+    
+    private func showInviteSheet() {
+        let sheet = InviteSheetViewController(inviteURL: "bluequest.app/c/verao-x7k2")
+        navigationController.present(sheet, animated: true)
     }
 }

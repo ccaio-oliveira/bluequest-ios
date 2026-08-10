@@ -11,6 +11,7 @@ import UIKit
 final class ChallengeViewController: UIViewController {
     var onBack: (() -> Void)?
     var onFinish: (() -> Void)?
+    var onInvite: (() -> Void)?
     
     private let viewModel: ChallengeViewModel
     
@@ -84,6 +85,7 @@ final class ChallengeViewController: UIViewController {
         
         let settingsButton = IconButtonView(icon: "gearshape")
         let inviteButton = IconButtonView(icon: "person.badge.plus", variant: .primary)
+        inviteButton.addTarget(self, action: #selector(handleInvite), for: .touchUpInside)
         
         let headerRow = UIStackView(arrangedSubviews: [backButton, titleStack, settingsButton, inviteButton])
         headerRow.axis = .horizontal
@@ -260,5 +262,9 @@ final class ChallengeViewController: UIViewController {
     
     @objc private func handleBack() {
         onBack?()
+    }
+    
+    @objc private func handleInvite() {
+        onInvite?()
     }
 }

@@ -24,7 +24,7 @@ final class ChallengeViewModel {
     private let userNames: [Int: String]
     private let completions: [Completion]
     
-    private let challengeTasks: [Task]
+    private let challengeTasks: [ChallengeTask]
     
     private lazy var joinedFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -64,9 +64,9 @@ final class ChallengeViewModel {
         header = ChallengeHeader(name: "", subtitle: "", day: 0, totalDays: 0, remainingText: "")
         
         challengeTasks = [
-            Task(id: 1, challengeID: challengeID, name: "Beber 2L de água", description: nil, points: 2, recurrence: .daily, deadlineTime: DateComponents(hour: 23, minute: 59), requiresPhoto: .none),
-            Task(id: 2, challengeID: challengeID, name: "Fazer treino", description: nil, points: 5, recurrence: .weekdays([.monday, .tuesday, .thursday, .friday]), deadlineTime: DateComponents(hour: 22, minute: 0), requiresPhoto: .optional),
-            Task(id: 3, challengeID: challengeID, name: "Cardio", description: nil, points: 3, recurrence: .weekdays([.monday, .wednesday, .friday]), deadlineTime: DateComponents(hour: 22, minute: 0), requiresPhoto: .none)
+            ChallengeTask(id: 1, challengeID: challengeID, name: "Beber 2L de água", description: nil, points: 2, recurrence: .daily, deadlineTime: DateComponents(hour: 23, minute: 59), requiresPhoto: .none),
+            ChallengeTask(id: 2, challengeID: challengeID, name: "Fazer treino", description: nil, points: 5, recurrence: .weekdays([.monday, .tuesday, .thursday, .friday]), deadlineTime: DateComponents(hour: 22, minute: 0), requiresPhoto: .optional),
+            ChallengeTask(id: 3, challengeID: challengeID, name: "Cardio", description: nil, points: 3, recurrence: .weekdays([.monday, .wednesday, .friday]), deadlineTime: DateComponents(hour: 22, minute: 0), requiresPhoto: .none)
         ]
         
         rebuild()
@@ -162,7 +162,7 @@ final class ChallengeViewModel {
         return result
     }
     
-    private func deadlineText(for task: Task) -> String {
+    private func deadlineText(for task: ChallengeTask) -> String {
         guard let date = calendar.date(
             bySettingHour: task.deadlineTime.hour ?? 23,
             minute: task.deadlineTime.minute ?? 59,

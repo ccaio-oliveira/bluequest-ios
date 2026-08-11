@@ -20,7 +20,7 @@ final class HomeViewModel {
     private let now: Date
     
     private let participant: Participant
-    private let tasks: [Task]
+    private let tasks: [ChallengeTask]
     private let occurrences: [Occurrence]
     private var completions: [Completion]
     private let mockChallenges: [Challenge]
@@ -46,11 +46,11 @@ final class HomeViewModel {
         participant = Participant(id: 1, userID: 1, challengeID: 1, joinedAt: today)
         
         tasks = [
-            Task(id: 1, challengeID: 1, name: "Beber 2L de água", points: 2, recurrence: .daily, deadlineTime: DateComponents(hour: 21, minute: 30), requiresPhoto: .none),
+            ChallengeTask(id: 1, challengeID: 1, name: "Beber 2L de água", points: 2, recurrence: .daily, deadlineTime: DateComponents(hour: 21, minute: 30), requiresPhoto: .none),
             
-            Task(id: 2, challengeID: 1, name: "Treinar", points: 5, recurrence: .daily, deadlineTime: DateComponents(hour: 21, minute: 30), requiresPhoto: .optional),
+            ChallengeTask(id: 2, challengeID: 1, name: "Treinar", points: 5, recurrence: .daily, deadlineTime: DateComponents(hour: 21, minute: 30), requiresPhoto: .optional),
             
-            Task(id: 3, challengeID: 1, name: "Cardio", points: 3, recurrence: .daily, deadlineTime: DateComponents(hour: 20, minute: 0), requiresPhoto: .none)
+            ChallengeTask(id: 3, challengeID: 1, name: "Cardio", points: 3, recurrence: .daily, deadlineTime: DateComponents(hour: 20, minute: 0), requiresPhoto: .none)
         ]
         
         occurrences = tasks.map { Occurrence(taskID: $0.id, date: today) }

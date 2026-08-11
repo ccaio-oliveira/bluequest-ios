@@ -15,7 +15,7 @@ enum CompletionError: Error, Equatable {
 enum CompletionRules {
     static func validateCompletion(
         occurrence: Occurrence,
-        task: Task,
+        task: ChallengeTask,
         isCompleted: Bool,
         requestingUserIsParticipant: Bool,
         now: Date,

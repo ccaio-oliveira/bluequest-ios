@@ -13,8 +13,8 @@ final class OccurrenceRulesTests: XCTestCase {
     
     private let calendar = Calendar(identifier: .gregorian)
     
-    private func makeTask(deadlineHour: Int = 22) -> Task {
-        Task(
+    private func makeTask(deadlineHour: Int = 22) -> ChallengeTask {
+        ChallengeTask(
             id: 1,
             challengeID: 1,
             name: "Cardio",

@@ -8,7 +8,7 @@
 import Foundation
 
 enum OccurrenceRules {
-    static func deadline(for occurrence: Occurrence, task: Task, calendar: Calendar = .current) -> Date? {
+    static func deadline(for occurrence: Occurrence, task: ChallengeTask, calendar: Calendar = .current) -> Date? {
         calendar.date(
             bySettingHour: task.deadlineTime.hour ?? 23, minute: task.deadlineTime.minute ?? 59, second: 0, of: occurrence.date
         )
@@ -16,7 +16,7 @@ enum OccurrenceRules {
     
     static func state(
         for occurrence: Occurrence,
-        task: Task,
+        task: ChallengeTask,
         isCompleted: Bool,
         now: Date,
         calendar: Calendar = .current

@@ -11,6 +11,7 @@ import UIKit
 final class HomeViewController: UIViewController {
     var onSelectChallenge: ((Int) -> Void)?
     var onLogout: (() -> Void)?
+    var onCreateChallenge: (() -> Void)?
     
     private let viewModel: HomeViewModel
 
@@ -22,6 +23,31 @@ final class HomeViewController: UIViewController {
     private let challengesStack = UIStackView()
     private let createButton = BQButton(title: "Criar desafio", icon: "plus", variant: .primary, size: .lg)
     private let pointsPill = PointsPillView(size: .lg)
+    
+    private let loadingIndicator = UIActivityIndicatorView(style: .large)
+    private let errorLabel = UILabel()
+    private let retryButton = BQButton(title: "Tentar de novo", icon: "arrow.clockwise", variant: .secondary)
+    private let errorStack = UIStackView()
+    private let refreshControl = UIRefreshControl()
+    private let toast = ToastView()
+    
+    private var hasLoadedOnce = false
+    
+    private lazy var emptyStateView: EmptyStateView = {
+        let view = EmptyStateView(
+            icon: "flag.fill",
+            title: "Nenhum desafio ainda",
+            message: "Crie um desafio com tarefas e pontos, convide pessoas e acompanhem o ranking. Convites recebidos entram automaticamente.",
+            actionTitle: "Criar desafio",
+            actionIcon: "plus"
+        )
+        
+        view.onAction = { [weak self] in
+            self?.onCreateChallenge?()
+        }
+        
+        return view
+    }()
     
     init(viewModel: HomeViewModel) {
         self.viewModel = viewModel
@@ -37,24 +63,36 @@ final class HomeViewController: UIViewController {
         view.backgroundColor = .bqBg0
         
         setupLayout()
-        renderTasks()
+        
+        headerView.onProfileTap = { [weak self] in
+            self?.confirmLogout()
+        }
         
         viewModel.onChange = { [weak self] in
-            self?.renderTasks()
+            self?.render()
         }
         
         viewModel.onPointsAwarded = { [weak self] points in
             self?.showPointsPop(points: points)
         }
         
-        headerView.onProfileTap = { [weak self] in
-            self?.confirmLogout()
+        viewModel.onActionError = { [weak self] message in
+            self?.showErrorToast(message)
+        }
+        
+        Task {
+            await viewModel.load()
+            hasLoadedOnce = true
         }
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         navigationController?.setNavigationBarHidden(true, animated: animated)
+        
+        if hasLoadedOnce {
+            Task { await viewModel.load(showingLoader: false) }
+        }
     }
     
     private func setupLayout() {
@@ -112,21 +150,111 @@ final class HomeViewController: UIViewController {
             
             contentStack.widthAnchor.constraint(equalTo: frame.widthAnchor, constant: -2 * BQSpacing.screenPadding)
         ])
+        
+        loadingIndicator.color = .bqText2
+        loadingIndicator.hidesWhenStopped = true
+        loadingIndicator.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(loadingIndicator)
+        
+        errorLabel.font = BQFont.body(BQTypeScale.body)
+        errorLabel.textColor = .bqText2
+        errorLabel.textAlignment = .center
+        errorLabel.numberOfLines = 0
+        
+        retryButton.addTarget(self, action: #selector(handleRetry), for: .touchUpInside)
+        
+        emptyStateView.isHidden = true
+        emptyStateView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(emptyStateView)
+        
+        createButton.addTarget(self, action: #selector(handleCreateChallenge), for: .touchUpInside)
+        
+        errorStack.axis = .vertical
+        errorStack.spacing = BQSpacing.sp4
+        errorStack.alignment = .center
+        errorStack.isHidden = true
+        errorStack.addArrangedSubview(errorLabel)
+        errorStack.addArrangedSubview(retryButton)
+        errorStack.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(errorStack)
+        
+        toast.isHidden = true
+        toast.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(toast)
+        
+        refreshControl.tintColor = .bqText3
+        refreshControl.addTarget(self, action: #selector(handleRefresh), for: .valueChanged)
+        scrollView.refreshControl = refreshControl
+        
+        NSLayoutConstraint.activate([
+            loadingIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            loadingIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            
+            errorStack.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            errorStack.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            errorStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: BQSpacing.sp10),
+            errorStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -BQSpacing.sp10),
+            
+            emptyStateView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            emptyStateView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            emptyStateView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            emptyStateView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            
+            toast.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            toast.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 12)
+        ])
+    }
+    
+    private func render() {
+        let isEmpty = !viewModel.hasContent
+        let hasFailed = viewModel.errorMessage != nil
+        
+        if viewModel.isLoading && isEmpty {
+            loadingIndicator.startAnimating()
+        } else {
+            loadingIndicator.stopAnimating()
+        }
+        
+        errorStack.isHidden = !(hasFailed && isEmpty)
+        errorLabel.text = viewModel.errorMessage
+        
+        emptyStateView.isHidden = !(isEmpty && !viewModel.isLoading && !hasFailed)
+        
+        scrollView.isHidden = isEmpty
+        
+        if !viewModel.isLoading {
+            refreshControl.endRefreshing()
+        }
+        
+        guard !isEmpty else { return }
+        
+        headerView.configure(with: viewModel.header)
+        renderTasks()
+        renderChallenges()
     }
     
     private func renderTasks() {
-        headerView.configure(with: viewModel.header)
-        challengesStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
         tasksStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        
+        guard !viewModel.rows.isEmpty else {
+            tasksStack.addArrangedSubview(makeNoTasksTodayCard())
+            return
+        }
         
         for row in viewModel.rows {
             let card = TaskCardView()
             card.configure(with: row.card)
             card.onComplete = { [weak self] in
-                self?.viewModel.completeTask(taskID: row.taskID)
+                guard let self else { return }
+                Task { await self.viewModel.completeTask(taskID: row.taskID) }
             }
+            
             tasksStack.addArrangedSubview(card)
         }
+    }
+    
+    private func renderChallenges() {
+        challengesStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
         
         for challenge in viewModel.challenges {
             let card = ChallengeCardView()
@@ -179,5 +307,67 @@ final class HomeViewController: UIViewController {
             await viewModel.logout()
             onLogout?()
         }
+    }
+    
+    private func showErrorToast(_ message: String) {
+        toast.configure(text: message, tone: .error, systemIcon: "exclamationmark.triangle.fill")
+        toast.alpha = 0
+        toast.isHidden = false
+        
+        UIView.animate(withDuration: 0.2) {
+            self.toast.alpha = 1
+        }
+        
+        UIView.animate(withDuration: 0.2, delay: 2.5) {
+            self.toast.alpha = 0
+        } completion: { _ in
+            self.toast.isHidden = true
+        }
+    }
+    
+    private func makeNoTasksTodayCard() -> UIView {
+        let card = UIView()
+        card.backgroundColor = .bqBg1
+        card.layer.cornerRadius = BQRadius.medium
+        card.layer.borderWidth = 1
+        card.layer.borderColor = UIColor.bqStroke1.cgColor
+        
+        let title = UILabel()
+        title.text = "Nenhuma tarefa hoje"
+        title.font = BQFont.body(BQTypeScale.body, weight: .semibold)
+        title.textColor = .bqText2
+        
+        let message = UILabel()
+        message.text = "As tarefas aparecem aqui nos dias em que precisam ser feitas."
+        message.font = BQFont.body(BQTypeScale.caption)
+        message.textColor = .bqText3
+        message.numberOfLines = 0
+        
+        let stack = UIStackView(arrangedSubviews: [title, message])
+        stack.axis = .vertical
+        stack.spacing = BQSpacing.sp1
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        card.addSubview(stack)
+        
+        NSLayoutConstraint.activate([
+            stack.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: BQSpacing.cardPadding),
+            stack.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -BQSpacing.cardPadding),
+            stack.topAnchor.constraint(equalTo: card.topAnchor, constant: BQSpacing.sp4),
+            stack.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -BQSpacing.sp4)
+        ])
+        
+        return card
+    }
+    
+    @objc private func handleRetry() {
+        Task { await viewModel.load() }
+    }
+    
+    @objc private func handleRefresh() {
+        Task { await viewModel.load(showingLoader: false) }
+    }
+    
+    @objc private func handleCreateChallenge() {
+        onCreateChallenge?()
     }
 }

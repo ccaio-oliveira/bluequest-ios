@@ -17,12 +17,35 @@ final class AppCoordinator: Coordinator {
     }
     
     func start() {
-        showHome()
+        if Session.shared.isAuthenticated {
+            showHome()
+        } else {
+            showAuth()
+        }
+    }
+    
+    private func showAuth() {
+        childCoordinators.removeAll()
+        
+        let coordinator = AuthCoordinator(navigationController: navigationController)
+        coordinator.onAuthenticated = { [weak self] in
+            self?.showHome()
+        }
+        
+        childCoordinators.append(coordinator)
+        coordinator.start()
     }
     
     private func showHome() {
-        let homeCoordinator = HomeCoordinator(navigationController: navigationController)
-        childCoordinators.append(homeCoordinator)
-        homeCoordinator.start()
+        childCoordinators.removeAll()
+        
+        let coordinator = HomeCoordinator(navigationController: navigationController)
+        
+        coordinator.onLogout = { [weak self] in
+            self?.showAuth()
+        }
+        
+        childCoordinators.append(coordinator)
+        coordinator.start()
     }
 }

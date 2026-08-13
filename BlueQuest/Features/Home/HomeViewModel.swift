@@ -87,6 +87,11 @@ final class HomeViewModel {
         onPointsAwarded?(task.points)
     }
     
+    func logout() async {
+        try? await AuthService.shared.logout()
+        Session.shared.end()
+    }
+    
     private lazy var timeFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.timeStyle = .short

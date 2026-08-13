@@ -61,4 +61,16 @@ final class AuthService {
     func logout() async throws {
         try await client.postWithoutResponse("logout")
     }
+    
+    func signInWithGoogle(idToken: String, name: String?) async throws -> (user: User, token: String) {
+        let response: AuthResponseDTO = try await client.post("auth/google", body: SocialAuthRequest(identityToken: idToken, name: name))
+        
+        return (response.user.toDomain(), response.token)
+    }
+}
+
+
+private struct SocialAuthRequest: Encodable {
+    let identityToken: String
+    let name: String?
 }

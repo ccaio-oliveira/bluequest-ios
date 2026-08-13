@@ -10,6 +10,7 @@ import UIKit
 
 final class HomeCoordinator: Coordinator {
     let navigationController: UINavigationController
+    var onLogout: (() -> Void)?
     
     private var childCoordinators: [Coordinator] = []
     
@@ -24,6 +25,10 @@ final class HomeCoordinator: Coordinator {
         
         viewController.onSelectChallenge = { [weak self] challengeID in
             self?.showChallenge(id: challengeID)
+        }
+        
+        viewController.onLogout = { [weak self] in
+            self?.onLogout?()
         }
         
         navigationController.setViewControllers([viewController], animated: false)

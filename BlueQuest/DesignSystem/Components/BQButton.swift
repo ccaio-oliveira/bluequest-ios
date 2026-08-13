@@ -102,4 +102,9 @@ final class BQButton: UIButton {
             }
         }
     }
+    
+    func setLoading(_ isLoading: Bool) {
+        configuration?.showsActivityIndicator = isLoading
+        isEnabled = !isLoading
+    }
 }

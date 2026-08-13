@@ -10,11 +10,13 @@ import UIKit
 
 final class HomeHeaderView: UIView {
     var onNotificationsTap: (() -> Void)?
+    var onProfileTap: (() -> Void)?
     
     private let overlineLabel = UILabel()
     private let pointsLabel = UILabel()
     private let notificationsButton = UIButton(type: .system)
     private let ring = ProgressRingView(size: 60)
+    private let profileButton = UIButton(type: .system)
     
     init() {
         super.init(frame: .zero)
@@ -67,7 +69,13 @@ final class HomeHeaderView: UIView {
         notificationsButton.addTarget(self, action: #selector(handleNotifications), for: .touchUpInside)
         notificationsButton.translatesAutoresizingMaskIntoConstraints = false
         
-        let rightStack = UIStackView(arrangedSubviews: [notificationsButton, ring])
+        profileButton.setImage(UIImage(systemName: "person.crop.circle"), for: .normal)
+        profileButton.setPreferredSymbolConfiguration(UIImage.SymbolConfiguration(pointSize: 20, weight: .regular), forImageIn: .normal)
+        profileButton.tintColor = .bqText2
+        profileButton.addTarget(self, action: #selector(handleProfile), for: .touchUpInside)
+        profileButton.translatesAutoresizingMaskIntoConstraints = false
+        
+        let rightStack = UIStackView(arrangedSubviews: [profileButton, notificationsButton, ring])
         rightStack.axis = .horizontal
         rightStack.spacing = 10
         rightStack.alignment = .center
@@ -83,6 +91,9 @@ final class HomeHeaderView: UIView {
             notificationsButton.widthAnchor.constraint(equalToConstant: BQSpacing.hitTarget),
             notificationsButton.heightAnchor.constraint(equalToConstant: BQSpacing.hitTarget),
             
+            profileButton.widthAnchor.constraint(equalToConstant: BQSpacing.hitTarget),
+            profileButton.heightAnchor.constraint(equalToConstant: BQSpacing.hitTarget),
+            
             mainStack.leadingAnchor.constraint(equalTo: leadingAnchor),
             mainStack.trailingAnchor.constraint(equalTo: trailingAnchor),
             mainStack.topAnchor.constraint(equalTo: topAnchor),
@@ -92,5 +103,9 @@ final class HomeHeaderView: UIView {
     
     @objc private func handleNotifications() {
         onNotificationsTap?()
+    }
+    
+    @objc private func handleProfile() {
+        onProfileTap?()
     }
 }

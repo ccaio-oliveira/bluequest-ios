@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import UIKit
 
 @MainActor
 final class AuthViewModel {
@@ -58,6 +59,31 @@ final class AuthViewModel {
         } catch {
             isLoading = false
             errorMessage = (error as? APIError)?.errorDescription ?? "Não foi possível continuar."
+            onChange?()
+        }
+    }
+    
+    func signInWithGoogle(presenting viewController: UIViewController) async {
+        guard !isLoading else { return }
+        
+        isLoading = true
+        errorMessage = nil
+        onChange?()
+        
+        do {
+            let google = try await GoogleSignInService.shared.signIn(presenting: viewController)
+            let result = try await AuthService.shared.signInWithGoogle(idToken: google.idToken, name: google.name)
+            
+            Session.shared.start(token: result.token, user: result.user)
+            isLoading = false
+            onChange?()
+            onAuthenticated?()
+        } catch GoogleSignInError.cancelled {
+            isLoading = false
+            onChange?()
+        } catch {
+            isLoading = false
+            errorMessage = (error as? APIError)?.errorDescription ?? "Não foi possível entrar com o Google."
             onChange?()
         }
     }

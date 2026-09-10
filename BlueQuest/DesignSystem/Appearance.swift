@@ -21,4 +21,29 @@ enum BQAppearance {
         UINavigationBar.appearance().compactAppearance = appearance
         UINavigationBar.appearance().tintColor = .bqBlueBright
     }
+    
+    static func configureTabBar() {
+        let appearance = UITabBarAppearance()
+        appearance.configureWithDefaultBackground()
+        appearance.backgroundColor = UIColor.bqBg0.withAlphaComponent(0.85)
+        appearance.shadowColor = .bqStroke1
+        
+        for item in [appearance.stackedLayoutAppearance, appearance.inlineLayoutAppearance, appearance.compactInlineLayoutAppearance] {
+            
+            item.normal.iconColor = .bqText3
+            item.normal.titleTextAttributes = [
+                .foregroundColor: UIColor.bqText3,
+                .font: BQFont.body(11, weight: .semibold)
+            ]
+            
+            item.selected.iconColor = .bqBlueBright
+            item.selected.titleTextAttributes = [
+                .foregroundColor: UIColor.bqBlueBright,
+                .font: BQFont.body(11, weight: .semibold)
+            ]
+        }
+        
+        UITabBar.appearance().standardAppearance = appearance
+        UITabBar.appearance().scrollEdgeAppearance = appearance
+    }
 }

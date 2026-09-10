@@ -27,10 +27,6 @@ final class HomeCoordinator: Coordinator {
             self?.showChallenge(id: challengeID)
         }
         
-        viewController.onLogout = { [weak self] in
-            self?.onLogout?()
-        }
-        
         viewController.onCreateChallenge = { [weak self] in
             self?.showCreateChallenge()
         }

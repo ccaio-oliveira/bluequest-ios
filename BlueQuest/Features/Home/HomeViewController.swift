@@ -10,7 +10,6 @@ import UIKit
 
 final class HomeViewController: UIViewController {
     var onSelectChallenge: ((Int) -> Void)?
-    var onLogout: (() -> Void)?
     var onCreateChallenge: (() -> Void)?
     
     private let viewModel: HomeViewModel
@@ -63,10 +62,6 @@ final class HomeViewController: UIViewController {
         view.backgroundColor = .bqBg0
         
         setupLayout()
-        
-        headerView.onProfileTap = { [weak self] in
-            self?.confirmLogout()
-        }
         
         viewModel.onChange = { [weak self] in
             self?.render()
@@ -281,31 +276,6 @@ final class HomeViewController: UIViewController {
             self.pointsPill.alpha = 0
         } completion: { _ in
             self.pointsPill.isHidden = true
-        }
-    }
-    
-    private func confirmLogout() {
-        let alert = UIAlertController(
-            title: "Sair da conta?",
-            message: "Você precisará entrar novamente para acessar seus desafios.",
-            preferredStyle: .actionSheet
-        )
-        
-        alert.addAction(UIAlertAction(title: "Sair", style: .destructive) { [weak self] _ in
-            self?.performLogout()
-        })
-        
-        alert.addAction(UIAlertAction(title: "Cancelar", style: .cancel))
-        
-        alert.popoverPresentationController?.sourceView = headerView
-        
-        present(alert, animated: true)
-    }
-    
-    private func performLogout() {
-        Task {
-            await viewModel.logout()
-            onLogout?()
         }
     }
     

@@ -8,17 +8,18 @@
 import Foundation
 import UIKit
 
+@MainActor
 final class AppCoordinator: Coordinator {
-    let navigationController: UINavigationController
+    private let window: UIWindow
     private var childCoordinators: [Coordinator] = []
     
-    init(navigationController: UINavigationController) {
-        self.navigationController = navigationController
+    init(window: UIWindow) {
+        self.window = window
     }
     
     func start() {
         if Session.shared.isAuthenticated {
-            showHome()
+            showMain()
         } else {
             showAuth()
         }
@@ -27,19 +28,22 @@ final class AppCoordinator: Coordinator {
     private func showAuth() {
         childCoordinators.removeAll()
         
+        let navigationController = BQNavigationController()
         let coordinator = AuthCoordinator(navigationController: navigationController)
         coordinator.onAuthenticated = { [weak self] in
-            self?.showHome()
+            self?.showMain()
         }
         
         childCoordinators.append(coordinator)
         coordinator.start()
+        
+        window.rootViewController = navigationController
     }
     
-    private func showHome() {
+    private func showMain() {
         childCoordinators.removeAll()
         
-        let coordinator = HomeCoordinator(navigationController: navigationController)
+        let coordinator = MainTabCoordinator()
         
         coordinator.onLogout = { [weak self] in
             self?.showAuth()
@@ -47,5 +51,7 @@ final class AppCoordinator: Coordinator {
         
         childCoordinators.append(coordinator)
         coordinator.start()
+        
+        window.rootViewController = coordinator.tabBarController
     }
 }

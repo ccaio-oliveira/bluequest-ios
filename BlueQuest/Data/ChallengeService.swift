@@ -52,6 +52,24 @@ private struct CompleteTaskRequest: Encodable {
     let occurrenceDate: String
 }
 
+private struct CreateTaskRequest: Encodable {
+    let name: String
+    let points: Int
+    let recurrenceType: String
+    let recurrenceWeekdays: [Int]?
+    let deadlineTime: String
+    let photoRequirement: String
+}
+
+private struct CreateChallengeRequest: Encodable {
+    let name: String
+    let description: String?
+    let startDate: String
+    let endDate: String
+    let timezone: String
+    let tasks: [CreateTaskRequest]
+}
+
 struct TodayOccurrence {
     let taskID: Int
     let challengeID: Int
@@ -75,6 +93,24 @@ struct ChallengeSummary {
     let myRank: Int?
     let participantsCount: Int
     let participantNames: [String]
+}
+
+struct NewChallenge {
+    let name: String
+    let description: String?
+    let startDate: String
+    let endDate: String
+    let timezone: String
+    let tasks: [NewTask]
+}
+
+struct NewTask {
+    let name: String
+    let points: Int
+    let recurrenceType: String
+    let weekdays: [Int]?
+    let deadlineTime: String
+    let photoRequirement: String
 }
 
 final class ChallengeService {
@@ -123,6 +159,28 @@ final class ChallengeService {
     
     func completeTask(taskID: Int, occurrenceDate: String) async throws {
         let _: CompletionResponseDTO = try await client.post("completions", body: CompleteTaskRequest(taskId: taskID, occurrenceDate: occurrenceDate))
+    }
+    
+    func create(_ challenge: NewChallenge) async throws {
+        let body = CreateChallengeRequest(
+            name: challenge.name,
+            description: challenge.description,
+            startDate: challenge.startDate,
+            endDate: challenge.endDate,
+            timezone: challenge.timezone,
+            tasks: challenge.tasks.map {
+                CreateTaskRequest(
+                    name: $0.name,
+                    points: $0.points,
+                    recurrenceType: $0.recurrenceType,
+                    recurrenceWeekdays: $0.weekdays,
+                    deadlineTime: $0.deadlineTime,
+                    photoRequirement: $0.photoRequirement
+                )
+            }
+        )
+        
+        let _: ChallengeSummaryDTO = try await client.post("challenges", body: body)
     }
 }
 

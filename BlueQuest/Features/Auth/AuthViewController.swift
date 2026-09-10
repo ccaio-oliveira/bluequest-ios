@@ -40,6 +40,7 @@ final class AuthViewController: UIViewController {
         
         setupLayout()
         observerKeyboard()
+        setupDismissKeyboardGesture()
         
         viewModel.onChange = { [weak self] in
             self?.render()
@@ -168,6 +169,12 @@ final class AuthViewController: UIViewController {
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide), name: UIResponder.keyboardWillHideNotification, object: nil)
     }
     
+    private func setupDismissKeyboardGesture() {
+        let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        tap.cancelsTouchesInView = false
+        view.addGestureRecognizer(tap)
+    }
+    
     @objc private func keyboardWillChange(_ notification: Notification) {
         guard let frame = notification.userInfo? [UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
         
@@ -179,6 +186,10 @@ final class AuthViewController: UIViewController {
     @objc private func keyboardWillHide() {
         scrollView.contentInset.bottom = 0
         scrollView.verticalScrollIndicatorInsets.bottom = 0
+    }
+    
+    @objc private func dismissKeyboard() {
+        view.endEditing(true)
     }
     
     @objc private func handleSubmit() {

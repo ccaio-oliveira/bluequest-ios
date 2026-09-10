@@ -31,11 +31,26 @@ final class HomeCoordinator: Coordinator {
             self?.onLogout?()
         }
         
+        viewController.onCreateChallenge = { [weak self] in
+            self?.showCreateChallenge()
+        }
+        
         navigationController.setViewControllers([viewController], animated: false)
     }
     
     private func showChallenge(id: Int) {
         let coordinator = ChallengeCoordinator(navigationController: navigationController, challengeID: id)
+        
+        coordinator.onFinish = { [weak self, weak coordinator] in
+            self?.childCoordinators.removeAll { $0 === coordinator }
+        }
+        
+        childCoordinators.append(coordinator)
+        coordinator.start()
+    }
+    
+    private func showCreateChallenge() {
+        let coordinator = CreateChallengeCoordinator(navigationController: navigationController)
         
         coordinator.onFinish = { [weak self, weak coordinator] in
             self?.childCoordinators.removeAll { $0 === coordinator }

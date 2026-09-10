@@ -29,6 +29,8 @@ final class HomeViewController: UIViewController {
     private let errorStack = UIStackView()
     private let refreshControl = UIRefreshControl()
     private let toast = ToastView()
+    private var filterChips: [BQChipView] = []
+    private let closedFootnote = UILabel()
     
     private var hasLoadedOnce = false
     
@@ -110,7 +112,27 @@ final class HomeViewController: UIViewController {
         challengesStack.axis = .vertical
         challengesStack.spacing = BQSpacing.sp2
         
-        let challengesSection = UIStackView(arrangedSubviews: [challengesSectionLabel, challengesStack])
+        let chipsRow = UIStackView()
+        chipsRow.axis = .horizontal
+        chipsRow.spacing = 6
+        
+        for filter in ChallengeFilter.allCases {
+            let chip = BQChipView(title: filter.title)
+            chip.tag = filter.rawValue
+            chip.addTarget(self, action: #selector(handleFilterTap(_:)), for: .touchUpInside)
+            filterChips.append(chip)
+            chipsRow.addArrangedSubview(chip)
+        }
+        
+        chipsRow.addArrangedSubview(UIView())
+        
+        closedFootnote.text = "Desafios encerrados ficam no histórico com resultado final."
+        closedFootnote.font = BQFont.body(12)
+        closedFootnote.textColor = .bqText3
+        closedFootnote.textAlignment = .center
+        closedFootnote.numberOfLines = 0
+        
+        let challengesSection = UIStackView(arrangedSubviews: [challengesSectionLabel, chipsRow, challengesStack, closedFootnote])
         challengesSection.axis = .vertical
         challengesSection.spacing = 10
         
@@ -249,7 +271,18 @@ final class HomeViewController: UIViewController {
     }
     
     private func renderChallenges() {
+        for chip in filterChips {
+            chip.isSelected = chip.tag == viewModel.filter.rawValue
+        }
+        
+        closedFootnote.isHidden = viewModel.filter != .closed
+        
         challengesStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        
+        guard !viewModel.challenges.isEmpty else {
+            challengesStack.addArrangedSubview(makeNoTasksTodayCard())
+            return
+        }
         
         for challenge in viewModel.challenges {
             let card = ChallengeCardView()
@@ -302,18 +335,20 @@ final class HomeViewController: UIViewController {
         card.layer.borderWidth = 1
         card.layer.borderColor = UIColor.bqStroke1.cgColor
         
-        let title = UILabel()
-        title.text = "Nenhuma tarefa hoje"
-        title.font = BQFont.body(BQTypeScale.body, weight: .semibold)
-        title.textColor = .bqText2
+        let label = UILabel()
+        label.text = "Nenhum desafio aqui"
+        label.font = BQFont.body(BQTypeScale.body, weight: .semibold)
+        label.textColor = .bqText2
+        label.textAlignment = .center
         
         let message = UILabel()
-        message.text = "As tarefas aparecem aqui nos dias em que precisam ser feitas."
+        message.text = viewModel.filter == .closed ? "Desafios que terminaram vão aparecer aqui." : "Crie um desafio ou entre por convite."
         message.font = BQFont.body(BQTypeScale.caption)
         message.textColor = .bqText3
+        message.textAlignment = .center
         message.numberOfLines = 0
         
-        let stack = UIStackView(arrangedSubviews: [title, message])
+        let stack = UIStackView(arrangedSubviews: [label, message])
         stack.axis = .vertical
         stack.spacing = BQSpacing.sp1
         stack.translatesAutoresizingMaskIntoConstraints = false
@@ -322,8 +357,8 @@ final class HomeViewController: UIViewController {
         NSLayoutConstraint.activate([
             stack.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: BQSpacing.cardPadding),
             stack.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -BQSpacing.cardPadding),
-            stack.topAnchor.constraint(equalTo: card.topAnchor, constant: BQSpacing.sp4),
-            stack.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -BQSpacing.sp4)
+            stack.topAnchor.constraint(equalTo: card.topAnchor, constant: BQSpacing.sp5),
+            stack.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -BQSpacing.sp5)
         ])
         
         return card
@@ -339,5 +374,10 @@ final class HomeViewController: UIViewController {
     
     @objc private func handleCreateChallenge() {
         onCreateChallenge?()
+    }
+    
+    @objc private func handleFilterTap(_ chip: BQChipView) {
+        guard let filter = ChallengeFilter(rawValue: chip.tag) else { return }
+        viewModel.setFilter(filter)
     }
 }

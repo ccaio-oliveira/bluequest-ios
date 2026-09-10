@@ -12,7 +12,8 @@ final class HomeViewModel {
     private(set) var isLoading = false
     private(set) var errorMessage: String?
     private(set) var rows: [HomeTaskRow] = []
-    private(set) var challenges: [HomeChallengeRow] = []
+    private(set) var allChallenges: [HomeChallengeRow] = []
+    private(set) var filter: ChallengeFilter = .inProgress
     private(set) var header = HomeHeader(dateText: "", points: 0, completedCount: 0, doableCount: 0)
     
     var onChange: (() -> Void)?
@@ -34,9 +35,13 @@ final class HomeViewModel {
         formatter.dateFormat = "EEEE, d MMM"
         return formatter
     }()
+    
+    var challenges: [HomeChallengeRow] {
+        allChallenges.filter { $0.state == filter.state }
+    }
 
     var hasContent: Bool {
-        !rows.isEmpty || !challenges.isEmpty
+        !rows.isEmpty || !allChallenges.isEmpty
     }
     
     enum HomeEmptyState {
@@ -104,6 +109,11 @@ final class HomeViewModel {
         }
     }
     
+    func setFilter(_ filter: ChallengeFilter) {
+        self.filter = filter
+        onChange?()
+    }
+    
     private func rebuildRows() {
         rows = occurrences.map { occurrence in
             HomeTaskRow(
@@ -135,8 +145,14 @@ final class HomeViewModel {
     }
     
     private func rebuildChallenges(from summaries: [ChallengeSummary]) {
-        challenges = summaries.enumerated().map { index, summary in
-            HomeChallengeRow(
+        var heroAssigned = false
+        
+        allChallenges = summaries.map { summary in
+            let isHero = !heroAssigned && summary.state == .inProgress
+            
+            if isHero { heroAssigned = true }
+            
+            return HomeChallengeRow(
                 id: summary.id,
                 name: summary.name,
                 periodText: summary.periodText,
@@ -145,8 +161,9 @@ final class HomeViewModel {
                 points: summary.myPoints,
                 rank: summary.myRank,
                 participantNames: summary.participantNames,
+                participantsCount: summary.participantsCount,
                 state: summary.state,
-                isHero: index == 0
+                isHero: isHero
             )
         }
     }
@@ -173,6 +190,27 @@ struct HomeChallengeRow: Equatable {
     let points: Int
     let rank: Int?
     let participantNames: [String]
+    let participantsCount: Int
     let state: ChallengeState
     let isHero: Bool
+}
+
+enum ChallengeFilter: Int, CaseIterable {
+    case inProgress, future, closed
+    
+    var title: String {
+        switch self {
+        case .inProgress: "Em andamento"
+        case .future: "Futuros"
+        case .closed: "Encerrados"
+        }
+    }
+    
+    var state: ChallengeState {
+        switch self {
+        case .inProgress: .inProgress
+        case .future: .future
+        case .closed: .closed
+        }
+    }
 }

@@ -81,7 +81,7 @@ final class ChallengeCardView: UIView {
             avatarsStack.addArrangedSubview(avatar)
         }
         
-        participantsLabel.text = "\(row.participantNames.count) participantes"
+        participantsLabel.text = row.participantsCount == 1 ? "1 participante" : "\(row.participantsCount) participantes"
         participantsRow.isHidden = row.participantNames.isEmpty
     }
     

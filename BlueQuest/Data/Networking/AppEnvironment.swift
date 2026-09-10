@@ -12,7 +12,7 @@ enum AppEnvironment {
         #if targetEnvironment(simulator)
         URL(string: "http://127.0.0.1:8000/api")!
         #else
-        URL(string: "http://192.168.1.6:8000/api")!
+        URL(string: "http://MacBook-Pro-de-Caio.local:8000/api")!
         #endif
     }
 }

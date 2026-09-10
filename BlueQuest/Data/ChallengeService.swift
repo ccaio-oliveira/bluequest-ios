@@ -70,6 +70,16 @@ private struct CreateChallengeRequest: Encodable {
     let tasks: [CreateTaskRequest]
 }
 
+private struct CompletionResponseDTO: Decodable {
+    let id: Int
+    let pointsAwarded: Int
+}
+
+private struct InviteLinkDTO: Decodable {
+    let code: String
+    let link: String
+}
+
 struct TodayOccurrence {
     let taskID: Int
     let challengeID: Int
@@ -182,9 +192,9 @@ final class ChallengeService {
         
         let _: ChallengeSummaryDTO = try await client.post("challenges", body: body)
     }
-}
-
-private struct CompletionResponseDTO: Decodable {
-    let id: Int
-    let pointsAwarded: Int
+    
+    func inviteLink(challengeID: Int) async throws -> String {
+        let dto: InviteLinkDTO = try await client.get("challenges/\(challengeID)/invite")
+        return dto.link
+    }
 }

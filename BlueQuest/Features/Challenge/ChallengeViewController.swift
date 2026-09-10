@@ -11,7 +11,7 @@ import UIKit
 final class ChallengeViewController: UIViewController {
     var onBack: (() -> Void)?
     var onFinish: (() -> Void)?
-    var onInvite: (() -> Void)?
+    var onInvite: ((String) -> Void)?
     
     private let viewModel: ChallengeViewModel
     
@@ -265,6 +265,6 @@ final class ChallengeViewController: UIViewController {
     }
     
     @objc private func handleInvite() {
-        onInvite?()
+        onInvite?(viewModel.header.name)
     }
 }

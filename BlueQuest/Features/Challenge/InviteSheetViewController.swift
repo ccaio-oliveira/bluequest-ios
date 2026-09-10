@@ -11,11 +11,16 @@ import UIKit
 final class InviteSheetViewController: UIViewController {
     var onPreviewInvite: (() -> Void)?
     
-    private let inviteURL: String
+    private let viewModel: InviteSheetViewModel
     private let toast = ToastView()
     
-    init(inviteURL: String) {
-        self.inviteURL = inviteURL
+    private let linkLabel = UILabel()
+    private let descriptionLabel = UILabel()
+    private let copyButton = BQButton(title: "Copiar link", icon: "doc.on.doc", variant: .secondary)
+    private let shareButton = BQButton(title: "Compartilhar", icon: "square.and.arrow.up")
+    
+    init(viewModel: InviteSheetViewModel) {
+        self.viewModel = viewModel
         super.init(nibName: nil, bundle: nil)
         
         if let sheet = sheetPresentationController {
@@ -33,6 +38,14 @@ final class InviteSheetViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = .bqBg1
         setupViews()
+        
+        viewModel.onChange = { [weak self] in
+            self?.render()
+        }
+        
+        render()
+        
+        Task { await viewModel.load() }
     }
     
     private func setupViews() {
@@ -41,18 +54,14 @@ final class InviteSheetViewController: UIViewController {
         title.font = BQFont.display(19, weight: .bold)
         title.textColor = .bqText1
         
-        let description = UILabel()
-        description.text = "Quem receber o link entra direto no Projeto Verão. Convites de desafios encerrados são inválidos."
-        description.font = BQFont.body(BQTypeScale.caption)
-        description.textColor = .bqText3
-        description.numberOfLines = 0
+        descriptionLabel.text = "Quem receber o link entra direto no \(viewModel.challengeName). Convites de desafios encerrados são inválidos."
+        descriptionLabel.font = BQFont.body(BQTypeScale.caption)
+        descriptionLabel.textColor = .bqText3
+        descriptionLabel.numberOfLines = 0
         
         let linkBox = makeLinkBox()
         
-        let copyButton = BQButton(title: "Copiar link", icon: "doc.on.doc", variant: .secondary)
         copyButton.addTarget(self, action: #selector(handleCopy), for: .touchUpInside)
-        
-        let shareButton = BQButton(title: "Compartilhar", icon: "square.and.arrow.up")
         shareButton.addTarget(self, action: #selector(handleShare), for: .touchUpInside)
         
         let buttonsRow = UIStackView(arrangedSubviews: [copyButton, shareButton])
@@ -63,7 +72,7 @@ final class InviteSheetViewController: UIViewController {
         let previewButton = BQButton(title: "Ver como o convidado recebe", variant: .ghost)
         previewButton.addTarget(self, action: #selector(handlePreview), for: .touchUpInside)
         
-        let stack = UIStackView(arrangedSubviews: [title, description, linkBox, buttonsRow, previewButton])
+        let stack = UIStackView(arrangedSubviews: [title, descriptionLabel, linkBox, buttonsRow, previewButton])
         stack.axis = .vertical
         stack.spacing = BQSpacing.sp4
         stack.translatesAutoresizingMaskIntoConstraints = false
@@ -98,12 +107,10 @@ final class InviteSheetViewController: UIViewController {
         icon.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: 16, weight: .regular)
         icon.setContentHuggingPriority(.required, for: .horizontal)
         
-        let label = UILabel()
-        label.text = inviteURL
-        label.font = BQFont.display(BQTypeScale.caption, weight: .medium)
-        label.textColor = .bqText2
+        linkLabel.font = BQFont.display(BQTypeScale.caption, weight: .medium)
+        linkLabel.textColor = .bqText2
         
-        let stack = UIStackView(arrangedSubviews: [icon, label, UIView()])
+        let stack = UIStackView(arrangedSubviews: [icon, linkLabel, UIView()])
         stack.axis = .horizontal
         stack.spacing = BQSpacing.sp2
         stack.alignment = .center
@@ -121,6 +128,23 @@ final class InviteSheetViewController: UIViewController {
         return box
     }
     
+    private func render() {
+        if let link = viewModel.link {
+            linkLabel.text = link
+            linkLabel.textColor = .bqText2
+        } else if let error = viewModel.errorMessage {
+            linkLabel.text = error
+            linkLabel.textColor = .bqRed
+        } else {
+            linkLabel.text = "Gerando link..."
+            linkLabel.textColor = .bqText3
+        }
+        
+        let isReady = viewModel.link != nil
+        copyButton.isEnabled = isReady
+        shareButton.isEnabled = isReady
+    }
+    
     private func showToast() {
         UIView.animate(withDuration: 0.2) {
             self.toast.alpha = 1
@@ -132,12 +156,16 @@ final class InviteSheetViewController: UIViewController {
     }
     
     @objc private func handleCopy() {
-        UIPasteboard.general.string = inviteURL
+        guard let link = viewModel.link else { return }
+        
+        UIPasteboard.general.string = link
         showToast()
     }
     
     @objc private func handleShare() {
-        let activity = UIActivityViewController(activityItems: [inviteURL], applicationActivities: nil)
+        guard let link = viewModel.link else { return }
+        
+        let activity = UIActivityViewController(activityItems: [link], applicationActivities: nil)
         activity.popoverPresentationController?.sourceView = view
         present(activity, animated: true)
     }

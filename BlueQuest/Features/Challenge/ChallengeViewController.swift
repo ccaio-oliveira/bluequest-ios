@@ -26,6 +26,14 @@ final class ChallengeViewController: UIViewController {
     private let remainingLabel = UILabel()
     private let segmented = SegmentedControlView(options: ["Ranking", "Você", "Pessoas", "Tarefas"])
     
+    private let loadingIndicator = UIActivityIndicatorView(style: .large)
+    private let errorLabel = UILabel()
+    private let retryButton = BQButton(title: "Tentar de novo", icon: "arrow.clockwise", variant: .secondary)
+    private let errorStack = UIStackView()
+    private let refreshControl = UIRefreshControl()
+    
+    private var hasLoadedOnce = false
+    
     init(viewModel: ChallengeViewModel) {
         self.viewModel = viewModel
         super.init(nibName: nil, bundle: nil)
@@ -40,13 +48,26 @@ final class ChallengeViewController: UIViewController {
         view.backgroundColor = .bqBg0
         
         setupLayout()
+        
+        viewModel.onChange = { [weak self] in
+            self?.render()
+        }
+        
         render()
+        
+        Task {
+            await viewModel.load()
+            hasLoadedOnce = true
+        }
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         navigationController?.setNavigationBarHidden(true, animated: animated)
         
+        if hasLoadedOnce {
+            Task { await viewModel.load(showingLoader: false) }
+        }
     }
     
     override func viewDidDisappear(_ animated: Bool) {
@@ -132,9 +153,64 @@ final class ChallengeViewController: UIViewController {
             contentStack.widthAnchor.constraint(equalTo: frame.widthAnchor, constant: -2 * BQSpacing.screenPadding)
             
         ])
+        
+        loadingIndicator.color = .bqText2
+        loadingIndicator.hidesWhenStopped = true
+        loadingIndicator.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(loadingIndicator)
+        
+        errorLabel.font = BQFont.body(BQTypeScale.body)
+        errorLabel.textColor = .bqText2
+        errorLabel.textAlignment = .center
+        errorLabel.numberOfLines = 0
+        
+        retryButton.addTarget(self, action: #selector(handleRetry), for: .touchUpInside)
+        
+        errorStack.axis = .vertical
+        errorStack.spacing = BQSpacing.sp4
+        errorStack.alignment = .center
+        errorStack.isHidden = true
+        errorStack.addArrangedSubview(errorLabel)
+        errorStack.addArrangedSubview(retryButton)
+        errorStack.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(errorStack)
+        
+        refreshControl.tintColor = .bqText3
+        refreshControl.addTarget(self, action: #selector(handleRefresh), for: .valueChanged)
+        scrollView.refreshControl = refreshControl
+
+        NSLayoutConstraint.activate([
+            loadingIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            loadingIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+
+            errorStack.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            errorStack.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            errorStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: BQSpacing.sp10),
+            errorStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -BQSpacing.sp10)
+        ])
     }
     
     private func render() {
+        let hasContent = viewModel.hasContent
+        
+        if viewModel.isLoading && !hasContent {
+            loadingIndicator.startAnimating()
+        } else {
+            loadingIndicator.stopAnimating()
+        }
+        
+        let hasFailed = viewModel.errorMessage != nil
+        errorStack.isHidden = !(hasFailed && !hasContent)
+        errorLabel.text = viewModel.errorMessage
+        
+        scrollView.isHidden = !hasContent
+        
+        if !viewModel.isLoading {
+            refreshControl.endRefreshing()
+        }
+        
+        guard hasContent else { return }
+        
         let header = viewModel.header
         
         titleLabel.text = header.name
@@ -260,11 +336,21 @@ final class ChallengeViewController: UIViewController {
         return card
     }
     
+    @objc private func handleRetry() {
+        Task { await viewModel.load() }
+    }
+    
+    @objc private func handleRefresh() {
+        Task { await viewModel.load(showingLoader: false) }
+    }
+    
     @objc private func handleBack() {
         onBack?()
     }
     
     @objc private func handleInvite() {
+        guard !viewModel.header.name.isEmpty else { return }
+        
         onInvite?(viewModel.header.name)
     }
 }

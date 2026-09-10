@@ -9,187 +9,91 @@ import Foundation
 
 @MainActor
 final class ChallengeViewModel {
-    private(set) var header: ChallengeHeader
+    private(set) var isLoading = false
+    private(set) var errorMessage: String?
+    
+    private(set) var header = ChallengeHeader(name: "", subtitle: "", day: 0, totalDays: 0, remainingText: "")
     private(set) var ranking: [ChallengeRankingRow] = []
-    private(set) var personalStats = ChallengePersonalStats(points: 0, position: 0, completedCount: 0, streakDays: 0, expiredCount: 0)
     private(set) var participantRows: [ChallengeParticipantRow] = []
+    private(set) var personalStats = ChallengePersonalStats(points: 0, position: 0, completedCount: 0, streakDays: 0, expiredCount: 0)
     private(set) var taskRows: [ChallengeTaskRow] = []
     
-    private let calendar = Calendar(identifier: .gregorian)
-    private let now: Date
-    private let currentUserID = 1
+    var onChange: (() -> Void)?
     
-    private let challenge: Challenge
-    private let participants: [Participant]
-    private let userNames: [Int: String]
-    private let completions: [Completion]
+    var hasContent: Bool { !ranking.isEmpty }
     
-    private let challengeTasks: [ChallengeTask]
-    
-    private lazy var joinedFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "pt_BR")
-        formatter.dateFormat = "d MMM"
-        return formatter
-    }()
+    private let challengeID: Int
     
     init(challengeID: Int) {
-        let calendar = self.calendar
-        now = calendar.date(from: DateComponents(year: 2026, month: 8, day: 4, hour: 21))!
-        
-        challenge = Challenge(
-            id: challengeID,
-            name: "Projeto Verão",
-            description: "",
-            startDate: calendar.date(from: DateComponents(year: 2026, month: 8, day: 1))!,
-            endDate: calendar.date(from: DateComponents(year: 2026, month: 8, day: 30))!,
-            creatorUserID: 1
-        )
-        
-        participants = [
-            Participant(id: 1, userID: 1, challengeID: challengeID, joinedAt: challenge.startDate),
-            Participant(id: 2, userID: 10, challengeID: challengeID, joinedAt: challenge.startDate),
-            Participant(id: 3, userID: 30, challengeID: challengeID, joinedAt: challenge.startDate),
-            Participant(id: 4, userID: 40, challengeID: challengeID, joinedAt: challenge.startDate)
-        ]
-        
-        userNames = [1: "Fernanda", 10: "Ana", 30: "Caio", 40: "João"]
-        
-        completions = Self.makeCompletions(
-            totals: [1: 218, 2: 230, 3: 194, 4: 182],
-            startDate: challenge.startDate,
-            calendar: calendar
-        )
-        
-        header = ChallengeHeader(name: "", subtitle: "", day: 0, totalDays: 0, remainingText: "")
-        
-        challengeTasks = [
-            ChallengeTask(id: 1, challengeID: challengeID, name: "Beber 2L de água", description: nil, points: 2, recurrence: .daily, deadlineTime: DateComponents(hour: 23, minute: 59), requiresPhoto: .none),
-            ChallengeTask(id: 2, challengeID: challengeID, name: "Fazer treino", description: nil, points: 5, recurrence: .weekdays([.monday, .tuesday, .thursday, .friday]), deadlineTime: DateComponents(hour: 22, minute: 0), requiresPhoto: .optional),
-            ChallengeTask(id: 3, challengeID: challengeID, name: "Cardio", description: nil, points: 3, recurrence: .weekdays([.monday, .wednesday, .friday]), deadlineTime: DateComponents(hour: 22, minute: 0), requiresPhoto: .none)
-        ]
-        
-        rebuild()
+        self.challengeID = challengeID
     }
     
-    private func rebuild() {
-        let entries = RankingRules.rank(participants: participants, completions: completions)
+    func load(showingLoader: Bool = true) async {
+        if showingLoader { isLoading = true }
+        errorMessage = nil
+        onChange?()
         
-        ranking = entries.map { entry in
-            ChallengeRankingRow(
-                position: entry.position,
-                name: userNames[entry.participant.userID] ?? "-",
-                points: entry.points,
-                isYou: entry.participant.userID == currentUserID
-            )
+        defer {
+            isLoading = false
+            onChange?()
         }
         
-        let day = ChallengeRules.currentDay(for: challenge, now: now, calendar: calendar)
-        let total = ChallengeRules.totalDays(for: challenge, calendar: calendar)
-        let remaining = max(total - day, 0)
+        do {
+            let detail = try await ChallengeService.shared.challengeDetail(id: challengeID)
+            apply(detail)
+        } catch {
+            errorMessage = (error as? APIError)?.errorDescription ?? "Não foi possível carregar o desafio."
+        }
+    }
+    
+    private func apply(_ detail: ChallengeDetail) {
+        let remaining = max(detail.totalDays - detail.currentDay, 0)
         
-        header = ChallengeHeader(name: challenge.name, subtitle: "1-30 ago · \(participants.count) participantes", day: day, totalDays: total, remainingText: remaining == 0 ? "último dia" : "termina em \(remaining) dias")
-        
-        let myEntry = RankingRules.personalEntry(for: currentUserID, in: entries)
-        let myParticipantID = participants.first { $0.userID == currentUserID }?.id
-        
-        personalStats = ChallengePersonalStats(
-            points: myEntry?.points ?? 0,
-            position: myEntry?.position ?? 0,
-            completedCount: completions.filter { $0.participantID == myParticipantID }.count,
-            streakDays: 6,
-            expiredCount: 7
+        header = ChallengeHeader(
+            name: detail.name,
+            subtitle: "\(detail.periodText) · \(detail.participantsCount) \(detail.participantsCount == 1 ? "participante" : "participantes")",
+            day: detail.currentDay,
+            totalDays: detail.totalDays,
+            remainingText: detail.state == .closed ? "encerrado" : (remaining == 0 ? "último dia" : "termina em \(remaining) dias")
         )
         
-        participantRows = entries.map { entry in
+        ranking = detail.participants.map {
+            ChallengeRankingRow(position: $0.position, name: $0.name, points: $0.points, isYou: $0.isYou)
+        }
+        
+        participantRows = detail.participants.map {
             ChallengeParticipantRow(
-                name: userNames[entry.participant.userID] ?? "-",
-                joinedText: joinedFormatter.string(from: entry.participant.joinedAt).replacingOccurrences(of: ".", with: ""),
-                points: entry.points,
-                isCreator: entry.participant.userID == challenge.creatorUserID,
-                isYou: entry.participant.userID == currentUserID
+                name: $0.name,
+                joinedText: $0.joinedText,
+                points: $0.points,
+                isCreator: $0.isCreator,
+                isYou: $0.isYou
             )
-        }.sorted { lhs, rhs in
+        }
+        .sorted { lhs, rhs in
             if lhs.isCreator != rhs.isCreator { return lhs.isCreator }
             return lhs.points > rhs.points
         }
         
-        taskRows = challengeTasks.map { task in
+        personalStats = ChallengePersonalStats(
+            points: detail.stats.points,
+            position: detail.stats.position,
+            completedCount: detail.stats.completedCount,
+            streakDays: detail.stats.streakDays,
+            expiredCount: detail.stats.expiredCount
+        )
+        
+        taskRows = detail.tasks.map {
             ChallengeTaskRow(
                 card: TaskCardModel(
-                    taskName: task.name,
-                    points: task.points,
+                    taskName: $0.name,
+                    points: $0.points,
                     state: .available,
-                    deadlineText: deadlineText(for: task),
-                    hasPhoto: task.requiresPhoto != .none
+                    deadlineText: $0.deadlineText,
+                    hasPhoto: $0.hasPhoto
                 ),
-                recurrenceText: "\(task.name.lowercased()) \(recurrenceText(for: task.recurrence))"
+                recurrenceText: "\($0.name.lowercased()) \($0.recurrenceText)"
             )
-        }
-    }
-    
-    private static func makeCompletions(totals: [Int: Int], startDate: Date, calendar: Calendar) -> [Completion] {
-        let taskPoints = [(id: 1, points: 5), (id: 2, points: 3), (id: 3, points: 2)]
-        var result: [Completion] = []
-        var nextID = 1
-        
-        for (participantID, total) in totals.sorted(by: { $0.key < $1.key }) {
-            var remaining = total
-            var index = 0
-            
-            while remaining > 0 {
-                let task = taskPoints[index % taskPoints.count]
-                let points = min(task.points, remaining)
-                let dayOffset = index / taskPoints.count
-                let date = calendar.date(byAdding: .day, value: dayOffset, to: startDate) ?? startDate
-                
-                result.append(Completion(
-                    id: nextID,
-                    participantID: participantID,
-                    taskID: task.id,
-                    occurrenceDate: date,
-                    completedAt: date,
-                    pointsAwarded: points,
-                    photoURL: nil)
-                )
-                
-                remaining -= points
-                nextID += 1
-                index += 1
-            }
-        }
-        
-        return result
-    }
-    
-    private func deadlineText(for task: ChallengeTask) -> String {
-        guard let date = calendar.date(
-            bySettingHour: task.deadlineTime.hour ?? 23,
-            minute: task.deadlineTime.minute ?? 59,
-            second: 0,
-            of: now
-        ) else { return "" }
-        
-        let formatter = DateFormatter()
-        formatter.timeStyle = .short
-        formatter.dateStyle = .none
-        return formatter.string(from: date)
-    }
-    
-    private func recurrenceText(for recurrence: Recurrence) -> String {
-        switch recurrence {
-        case .once:
-            return "uma vez"
-        case .daily:
-            return "diária"
-        case .weekdays(let days):
-            let names: [Weekday: String] = [
-                .sunday: "dom", .monday: "seg", .tuesday: "ter", .wednesday: "qua", .thursday: "qui", .friday: "sex", .saturday: "sáb"
-            ]
-            return days
-                .sorted { $0.rawValue < $1.rawValue }
-                .compactMap { names[$0] }
-                .joined(separator: "/")
         }
     }
 }

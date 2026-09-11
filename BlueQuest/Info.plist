@@ -34,6 +34,14 @@
                 <string>com.googleusercontent.apps.173428542757-pe3uj3gq7vmd5kap3mg5ijafp4e94tcq</string>
             </array>
         </dict>
+        <dict>
+            <key>CFBundleURLName</key>
+            <string>br.com.ctech.BlueQuest.invite</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>bluequest</string>
+            </array>
+        </dict>
     </array>
 </dict>
 </plist>

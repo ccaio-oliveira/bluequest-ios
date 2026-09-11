@@ -125,6 +125,28 @@ private struct InviteLinkDTO: Decodable {
     let link: String
 }
 
+private struct InvitePreviewDTO: Decodable {
+    let state: String
+    let challenge: InviteChallengeDTO?
+}
+
+private struct InviteChallengeDTO: Decodable {
+    let id: Int
+    let name: String
+    let startDate: String
+    let endDate: String
+    let totalDays: Int
+    let participantsCount: Int
+    let participants: [ParticipantSummaryDTO]
+    let invitedBy: String?
+    let tasksCount: Int
+    let maxPointsPerDay: Int
+}
+
+private struct AcceptInviteDTO: Decodable {
+    let challengeId: Int
+}
+
 struct TodayOccurrence {
     let taskID: Int
     let challengeID: Int
@@ -205,6 +227,19 @@ struct ChallengeDetail {
     let participants: [ChallengeDetailParticipant]
     let stats: ChallengeDetailStats
     let tasks: [ChallengeDetailTask]
+}
+
+struct InvitePreview {
+    let state: InviteState
+    let challengeID: Int?
+    let name: String
+    let periodText: String
+    let invitedBy: String?
+    let participantNames: [String]
+    let participantsCount: Int
+    let totalDays: Int
+    let tasksCount: Int
+    let maxPointsPerDay: Int
 }
 
 final class ChallengeService {
@@ -324,6 +359,31 @@ final class ChallengeService {
     func inviteLink(challengeID: Int) async throws -> String {
         let dto: InviteLinkDTO = try await client.get("challenges/\(challengeID)/invite")
         return dto.link
+    }
+    
+    func invitePreview(code: String) async throws -> InvitePreview {
+        let dto: InvitePreviewDTO = try await client.get("invites/\(code)")
+        let challenge = dto.challenge
+        
+        return InvitePreview(
+            state: InviteState(rawValue: dto.state) ?? .invalid,
+            challengeID: challenge?.id,
+            name: challenge?.name ?? "",
+            periodText: challenge.map {
+                CalendarDayFormatter.periodText(from: $0.startDate, to: $0.endDate)
+            } ?? "",
+            invitedBy: challenge?.invitedBy,
+            participantNames: challenge?.participants.map(\.name) ?? [],
+            participantsCount: challenge?.participantsCount ?? 0,
+            totalDays: challenge?.totalDays ?? 0,
+            tasksCount: challenge?.tasksCount ?? 0,
+            maxPointsPerDay: challenge?.maxPointsPerDay ?? 0
+        )
+    }
+    
+    func acceptInvite(code: String) async throws -> Int {
+        let dto: AcceptInviteDTO = try await client.post("invites/\(code)/accept", body: EmptyBody())
+        return dto.challengeId
     }
     
     private static func recurrenceText(type: String, weekdays: [Int]?) -> String {

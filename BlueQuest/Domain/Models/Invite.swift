@@ -18,12 +18,11 @@ struct Invite: Identifiable, Codable {
     var revokedAt: Date?
 }
 
-enum InviteState: Equatable {
+enum InviteState: String {
     case valid
-    case used
-    case revoked
-    case challengeClosed
-    case alreadyParticipant
+    case invalid
+    case challengeClosed = "challenge_closed"
+    case alreadyParticipant = "already_participant"
 }
 
 func inviteState(

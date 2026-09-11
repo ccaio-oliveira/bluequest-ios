@@ -48,6 +48,10 @@ final class MainTabCoordinator: Coordinator {
         tabBarController.selectedIndex = 3
     }
     
+    func selectChallengesTab() {
+        tabBarController.selectedIndex = 3
+    }
+    
     private func makeChallengesTab() -> UIViewController {
         let navigationController = BQNavigationController()
         

@@ -99,6 +99,7 @@ final class ChallengeViewController: UIViewController {
         
         subtitleLabel.font = BQFont.body(BQTypeScale.caption)
         subtitleLabel.textColor = .bqText3
+        subtitleLabel.numberOfLines = 2
         
         let titleStack = UIStackView(arrangedSubviews: [titleLabel, subtitleLabel])
         titleStack.axis = .vertical

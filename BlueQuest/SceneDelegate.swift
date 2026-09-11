@@ -26,11 +26,20 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         
         window.makeKeyAndVisible()
         self.window = window
+        
+        if let url = connectionOptions.urlContexts.first?.url {
+            DispatchQueue.main.async {
+                coordinator.handle(url: url)
+            }
+        }
     }
     
     func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
         guard let url = URLContexts.first?.url else { return }
-        GIDSignIn.sharedInstance.handle(url)
+        
+        if GIDSignIn.sharedInstance.handle(url) { return }
+        
+        appCoordinator?.handle(url: url)
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {

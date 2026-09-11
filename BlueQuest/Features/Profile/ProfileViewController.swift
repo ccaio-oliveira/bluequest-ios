@@ -11,23 +11,18 @@ import UIKit
 final class ProfileViewController: UIViewController {
     var onLogout: (() -> Void)?
     
+    private let avatar = AvatarView(size: 72)
+    private let nameLabel = UILabel()
+    private let emailLabel = UILabel()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .bqBg0
         
-        let user = Session.shared.currentUser
-        
-        let avatar = AvatarView(size: 72)
-        avatar.configure(name: user?.name ?? "?")
-        
-        let nameLabel = UILabel()
-        nameLabel.text = user?.name ?? "Sua conta"
         nameLabel.font = BQFont.display(BQTypeScale.title2, weight: .bold)
         nameLabel.textColor = .bqText1
         nameLabel.textAlignment = .center
         
-        let emailLabel = UILabel()
-        emailLabel.text = user?.email
         emailLabel.font = BQFont.body(BQTypeScale.caption)
         emailLabel.textColor = .bqText3
         
@@ -59,11 +54,24 @@ final class ProfileViewController: UIViewController {
             stack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: BQSpacing.screenPadding),
             stack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -BQSpacing.screenPadding)
         ])
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(sessionUserDidChange), name: .sessionUserDidChange, object: nil)
+        
+        renderUser()
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         navigationController?.setNavigationBarHidden(true, animated: animated)
+    }
+    
+    private func renderUser() {
+        let user = Session.shared.currentUser
+        
+        avatar.configure(name: user?.name ?? "?")
+        nameLabel.text = user?.name ?? "Sua conta"
+        emailLabel.text = user?.email
+        emailLabel.isHidden = user?.email == nil
     }
     
     @objc private func confirmLogout() {
@@ -81,8 +89,12 @@ final class ProfileViewController: UIViewController {
             }
         })
         
-        alert.addAction(UIAlertAction(title: "Calendar", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Cancelar", style: .cancel))
         
         present(alert, animated: true)
+    }
+    
+    @objc private func sessionUserDidChange() {
+        renderUser()
     }
 }

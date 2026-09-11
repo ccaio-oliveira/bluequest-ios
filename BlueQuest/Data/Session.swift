@@ -11,7 +11,11 @@ import Foundation
 final class Session {
     static let shared = Session()
     
-    private(set) var currentUser: User?
+    private(set) var currentUser: User? {
+        didSet {
+            NotificationCenter.default.post(name: .sessionUserDidChange, object: self)
+        }
+    }
     
     var isAuthenticated: Bool {
         Keychain.get(.authToken) != nil
@@ -32,4 +36,8 @@ final class Session {
         Keychain.delete(.authToken)
         currentUser = nil
     }
+}
+
+extension Notification.Name {
+    static let sessionUserDidChange = Notification.Name("BlueQuest.sessionUserDidChange")
 }

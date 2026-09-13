@@ -71,6 +71,15 @@ final class APIClient {
 
         _ = try await perform(request)
     }
+    
+    func put<Body: Encodable>(_ path: String, body: Body) async throws {
+        var request = URLRequest(url: baseURL.appendingPathComponent(path))
+        request.httpMethod = "PUT"
+        request.httpBody = try encoder.encode(body)
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        _ = try await perform(request)
+    }
 
     private func send<Response: Decodable>(_ request: URLRequest) async throws -> Response {
         let data = try await perform(request)

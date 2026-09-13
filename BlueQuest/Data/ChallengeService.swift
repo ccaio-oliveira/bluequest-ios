@@ -147,6 +147,13 @@ private struct AcceptInviteDTO: Decodable {
     let challengeId: Int
 }
 
+private struct UpdateChallengeRequest: Encodable {
+    let name: String
+    let description: String
+    let startDate: String
+    let endDate: String
+}
+
 struct TodayOccurrence {
     let taskID: Int
     let challengeID: Int
@@ -219,6 +226,10 @@ struct ChallengeDetailStats {
 
 struct ChallengeDetail {
     let name: String
+    let description: String?
+    let startDate: String
+    let endDate: String
+    let isCreator: Bool
     let periodText: String
     let state: ChallengeState
     let currentDay: Int
@@ -240,6 +251,13 @@ struct InvitePreview {
     let totalDays: Int
     let tasksCount: Int
     let maxPointsPerDay: Int
+}
+
+struct ChallengeChanges {
+    let name: String
+    let description: String
+    let startDate: String
+    let endDate: String
 }
 
 final class ChallengeService {
@@ -291,6 +309,10 @@ final class ChallengeService {
         
         return ChallengeDetail(
             name: dto.name,
+            description: dto.description,
+            startDate: dto.startDate,
+            endDate: dto.endDate,
+            isCreator: dto.ranking.contains { $0.isYou && $0.isCreator },
             periodText: CalendarDayFormatter.periodText(from: dto.startDate, to: dto.endDate),
             state: ChallengeState(apiValue: dto.state) ?? .inProgress,
             currentDay: dto.currentDay,
@@ -354,6 +376,17 @@ final class ChallengeService {
         )
         
         let _: ChallengeSummaryDTO = try await client.post("challenges", body: body)
+    }
+    
+    func updateChallenge(id: Int, _ changes: ChallengeChanges) async throws {
+        let body = UpdateChallengeRequest(
+            name: changes.name,
+            description: changes.description,
+            startDate: changes.startDate,
+            endDate: changes.endDate
+        )
+        
+        try await client.put("challenges/\(id)", body: body)
     }
     
     func inviteLink(challengeID: Int) async throws -> String {

@@ -35,6 +35,10 @@ final class ChallengeCoordinator: Coordinator {
             self?.showInviteSheet(challengeName: challengeName)
         }
         
+        viewController.onSettings = { [weak self] in
+            self?.showSettings()
+        }
+        
         navigationController.pushViewController(viewController, animated: true)
     }
     
@@ -43,5 +47,16 @@ final class ChallengeCoordinator: Coordinator {
         let sheet = InviteSheetViewController(viewModel: viewModel)
         
         navigationController.present(sheet, animated: true)
+    }
+    
+    private func showSettings() {
+        let viewModel = ChallengeSettingsViewModel(challengeID: challengeID)
+        let viewController = ChallengeSettingsViewController(viewModel: viewModel)
+        
+        viewController.onBack = { [weak self] in
+            self?.navigationController.popViewController(animated: true)
+        }
+        
+        navigationController.pushViewController(viewController, animated: true)
     }
 }

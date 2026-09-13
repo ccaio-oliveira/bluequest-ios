@@ -11,6 +11,7 @@ import Foundation
 final class ChallengeViewModel {
     private(set) var isLoading = false
     private(set) var errorMessage: String?
+    private(set) var isCreator = false
     
     private(set) var header = ChallengeHeader(name: "", subtitle: "", day: 0, totalDays: 0, remainingText: "")
     private(set) var ranking: [ChallengeRankingRow] = []
@@ -48,6 +49,7 @@ final class ChallengeViewModel {
     
     private func apply(_ detail: ChallengeDetail) {
         let remaining = max(detail.totalDays - detail.currentDay, 0)
+        isCreator = detail.isCreator
         
         header = ChallengeHeader(
             name: detail.name,

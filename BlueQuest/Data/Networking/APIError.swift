@@ -38,6 +38,10 @@ enum APIError: LocalizedError {
         case "occurrence_not_available": "Esta tarefa não está mais disponível."
         case "occurrence_does_not_exist": "Esta tarefa não ocorre nesta data."
         case "outside_challenge_period": "Esta data está fora do período do desafio."
+        case "challenge_closed": "Este desafio já foi encerrado."
+        case "start_locked": "O início não pode mudar depois que o desafio começou."
+        case "start_in_past": "O início não pode ser uma data passada."
+        case "end_in_past": "O término não pode ser uma data passada."
         default: "Não foi possível concluir a ação."
         }
     }

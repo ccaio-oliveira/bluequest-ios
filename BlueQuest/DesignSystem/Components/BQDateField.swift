@@ -21,6 +21,18 @@ final class BQDateField: UIView {
         }
     }
     
+    var minimumDate: Date? {
+        get { picker.minimumDate }
+        set { picker.minimumDate = newValue }
+    }
+    
+    var isEnabled = true {
+        didSet {
+            picker.isEnabled = isEnabled
+            alpha = isEnabled ? 1 : 0.5
+        }
+    }
+    
     init(label: String, icon: String, mode: UIDatePicker.Mode = .date) {
         super.init(frame: .zero)
         setupViews(label: label, icon: icon, mode: mode)

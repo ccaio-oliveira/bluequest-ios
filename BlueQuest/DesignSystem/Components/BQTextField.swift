@@ -14,7 +14,7 @@ final class BQTextField: UIView {
     private let titleLabel = UILabel()
     private let iconView = UIImageView()
     
-    init(label: String, placeholder: String, icon: String, isSecure: Bool = false) {
+    init(label: String, placeholder: String, icon: String? = nil, isSecure: Bool = false) {
         super.init(frame: .zero)
         setupViews(label: label, placeholder: placeholder, icon: icon, isSecure: isSecure)
     }
@@ -24,10 +24,11 @@ final class BQTextField: UIView {
     }
     
     var text: String {
-        textField.text ?? ""
+        get { textField.text ?? "" }
+        set { textField.text = newValue }
     }
     
-    private func setupViews(label: String, placeholder: String, icon: String, isSecure: Bool) {
+    private func setupViews(label: String, placeholder: String, icon: String?, isSecure: Bool) {
         titleLabel.text = label
         titleLabel.font = BQFont.body(BQTypeScale.caption, weight: .semibold)
         titleLabel.textColor = .bqText2
@@ -38,7 +39,8 @@ final class BQTextField: UIView {
         box.layer.borderWidth = 1
         box.layer.borderColor = UIColor.bqStroke1.cgColor
         
-        iconView.image = UIImage(systemName: icon)
+        iconView.image = icon.flatMap { UIImage(systemName: $0) }
+        iconView.isHidden = icon == nil
         iconView.tintColor = .bqText3
         iconView.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: 18, weight: .regular)
         iconView.contentMode = .scaleAspectFit

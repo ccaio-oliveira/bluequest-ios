@@ -12,6 +12,7 @@ final class ChallengeViewController: UIViewController {
     var onBack: (() -> Void)?
     var onFinish: (() -> Void)?
     var onInvite: ((String) -> Void)?
+    var onSettings: (() -> Void)?
     
     private let viewModel: ChallengeViewModel
     
@@ -31,6 +32,8 @@ final class ChallengeViewController: UIViewController {
     private let retryButton = BQButton(title: "Tentar de novo", icon: "arrow.clockwise", variant: .secondary)
     private let errorStack = UIStackView()
     private let refreshControl = UIRefreshControl()
+    
+    private let settingsButton = IconButtonView(icon: "gearshape")
     
     private var hasLoadedOnce = false
     
@@ -105,7 +108,8 @@ final class ChallengeViewController: UIViewController {
         titleStack.axis = .vertical
         titleStack.spacing = 0
         
-        let settingsButton = IconButtonView(icon: "gearshape")
+        settingsButton.addTarget(self, action: #selector(handleSettings), for: .touchUpInside)
+        
         let inviteButton = IconButtonView(icon: "person.badge.plus", variant: .primary)
         inviteButton.addTarget(self, action: #selector(handleInvite), for: .touchUpInside)
         
@@ -219,6 +223,7 @@ final class ChallengeViewController: UIViewController {
         progressBar.configure(value: header.day, total: header.totalDays)
         dayLabel.text = "Dia \(header.day) de \(header.totalDays)"
         remainingLabel.text = header.remainingText
+        settingsButton.isHidden = !viewModel.isCreator
         
         renderTabContent()
     }
@@ -353,5 +358,9 @@ final class ChallengeViewController: UIViewController {
         guard !viewModel.header.name.isEmpty else { return }
         
         onInvite?(viewModel.header.name)
+    }
+    
+    @objc private func handleSettings() {
+        onSettings?()
     }
 }

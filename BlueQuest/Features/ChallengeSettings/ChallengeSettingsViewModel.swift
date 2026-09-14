@@ -29,15 +29,23 @@ struct ChallengeSettingsTaskRow {
     let subtitle: String
 }
 
+enum ChallengeSettingsOperation {
+    case details
+    case task
+}
+
 @MainActor
 final class ChallengeSettingsViewModel {
     private(set) var isLoading = false
     private(set) var loadError: String?
-    private(set) var isSaving = false
+    private(set) var savingOperation: ChallengeSettingsOperation?
     private(set) var saveError: String?
     private(set) var challengeName = ""
     private(set) var form: ChallengeSettingsForm?
     private(set) var tasks: [ChallengeSettingsTaskRow] = []
+    
+    var isSaving: Bool { savingOperation != nil }
+    var onTaskError: ((String) -> Void)?
     
     private var taskValues: [Int: TaskFormValues] = [:]
     
@@ -78,12 +86,12 @@ final class ChallengeSettingsViewModel {
             return
         }
         
-        isSaving = true
+        savingOperation = .details
         saveError = nil
         onChange?()
         
         defer {
-            isSaving = false
+            savingOperation = nil
             onChange?()
         }
         
@@ -112,60 +120,50 @@ final class ChallengeSettingsViewModel {
     }
     
     func saveTask(_ values: TaskFormValues, taskID: Int?) async {
-        guard !isSaving else { return }
+        let task = Self.makeNewTask(from: values)
         
-        isSaving = true
-        saveError = nil
-        onChange?()
-        
-        defer {
-            isSaving = false
-            onChange?()
-        }
-        
-        let isEveryDay = values.weekdays.count == 7
-        
-        let task = NewTask(
-            name: values.name,
-            points: values.points,
-            recurrenceType: isEveryDay ? "daily" : "weekdays",
-            weekdays: isEveryDay ? nil : values.weekdays.sorted(),
-            deadlineTime: CalendarDayFormatter.timeString(from: values.deadline),
-            photoRequirement: values.allowsPhoto ? "optional" : "none"
-        )
-        
-        do {
+        await runTaskOperation(
+            successMessage: taskID == nil ? "Tarefa adicionada" : "Tarefa atualizada",
+            failureMessage: "Não foi possível salvar a tarefa."
+        ) {
             if let taskID {
                 try await ChallengeService.shared.updateTask(id: taskID, task)
             } else {
                 try await ChallengeService.shared.createTask(challengeID: challengeID, task)
             }
-            
-            await load(showingLoader: false)
-            onSaved?(taskID == nil ? "Tarefa adicionada" : "Tarefa atualizada")
-        } catch {
-            saveError = (error as? APIError)?.errorDescription ?? "Não foi possível salvar a tarefa."
         }
     }
     
     func deleteTask(id: Int) async {
+        await runTaskOperation(
+            successMessage: "Tarefa excluída",
+            failureMessage: "Não foi possível excluir a tarefa."
+        ) {
+            try await ChallengeService.shared.deleteTask(id: id)
+        }
+    }
+    
+    private func runTaskOperation(
+        successMessage: String,
+        failureMessage: String,
+        _ operation: () async throws -> Void
+    ) async {
         guard !isSaving else { return }
         
-        isSaving = true
-        saveError = nil
+        savingOperation = .task
         onChange?()
         
         defer {
-            isSaving = false
+            savingOperation = nil
             onChange?()
         }
         
         do {
-            try await ChallengeService.shared.deleteTask(id: id)
+            try await operation()
             await load(showingLoader: false)
-            onSaved?("Tarefa excluída")
+            onSaved?(successMessage)
         } catch {
-            saveError = (error as? APIError)?.errorDescription ?? "Não foi possível excluir a tarefa."
+            onTaskError?((error as? APIError)?.errorDescription ?? failureMessage)
         }
     }
     
@@ -188,6 +186,19 @@ final class ChallengeSettingsViewModel {
             weekdays: task.recurrenceType == "daily" ? Set(1...7) : Set(task.weekdays),
             deadline: CalendarDayFormatter.localTime(from: task.deadlineTime) ?? Date(),
             allowsPhoto: task.hasPhoto
+        )
+    }
+    
+    private static func makeNewTask(from values: TaskFormValues) -> NewTask {
+        let isEveryDay = values.weekdays.count == 7
+        
+        return NewTask(
+            name: values.name,
+            points: values.points,
+            recurrenceType: isEveryDay ? "daily" : "weekdays",
+            weekdays: isEveryDay ? nil : values.weekdays.sorted(),
+            deadlineTime: CalendarDayFormatter.timeString(from: values.deadline),
+            photoRequirement: values.allowsPhoto ? "optional" : "none"
         )
     }
     

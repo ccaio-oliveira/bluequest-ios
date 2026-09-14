@@ -62,6 +62,7 @@ final class ToastView: UIView {
         
         label.font = BQFont.body(BQTypeScale.caption, weight: .semibold)
         label.textColor = .bqText1
+        label.numberOfLines = 0
         
         let stack = UIStackView(arrangedSubviews: [iconView, label])
         stack.axis = .horizontal
@@ -71,12 +72,27 @@ final class ToastView: UIView {
         
         addSubview(stack)
         
+        let preferredHeight = heightAnchor.constraint(equalToConstant: 42)
+        preferredHeight.priority = .defaultLow
+        
         NSLayoutConstraint.activate([
-            heightAnchor.constraint(equalToConstant: 42),
+            preferredHeight,
+            heightAnchor.constraint(greaterThanOrEqualToConstant: 42),
             
             stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
             stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
-            stack.centerYAnchor.constraint(equalTo: centerYAnchor)
+            stack.centerYAnchor.constraint(equalTo: centerYAnchor),
+            stack.topAnchor.constraint(greaterThanOrEqualTo: topAnchor, constant: 10)
+        ])
+    }
+    
+    override func didMoveToSuperview() {
+        super.didMoveToSuperview()
+        guard let superview else { return }
+        
+        NSLayoutConstraint.activate([
+            leadingAnchor.constraint(greaterThanOrEqualTo: superview.leadingAnchor, constant: BQSpacing.screenPadding),
+            trailingAnchor.constraint(lessThanOrEqualTo: superview.trailingAnchor, constant: -BQSpacing.screenPadding)
         ])
     }
 }

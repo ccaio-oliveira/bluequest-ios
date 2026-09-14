@@ -61,6 +61,10 @@ final class ChallengeSettingsViewController: UIViewController {
             self?.showToast(message)
         }
         
+        viewModel.onTaskError = { [weak self] message in
+            self?.showToast(message, tone: .error)
+        }
+        
         render()
         
         Task { await viewModel.load() }
@@ -240,27 +244,41 @@ final class ChallengeSettingsViewController: UIViewController {
         
         saveErrorLabel.text = viewModel.saveError
         saveErrorLabel.isHidden = viewModel.saveError == nil
-        saveButton.setLoading(viewModel.isSaving)
+        saveButton.setLoading(viewModel.savingOperation == .details)
+        saveButton.isEnabled = viewModel.savingOperation == nil
     }
     
     private func renderTasks() {
+        let canEdit = viewModel.form?.canEditDetails ?? false
+        
         let rows = viewModel.tasks.map { task -> ListRowView in
             let row = ListRowView(
                 icon: "checkmark.circle",
                 title: task.title,
                 subtitle: task.subtitle,
+                showsChevron: canEdit,
                 trailingIcon: "pencil"
             )
             
-            row.tag = task.id
-            row.addTarget(self, action: #selector(handleEditTask(_:)), for: .touchUpInside)
+            if canEdit {
+                row.tag = task.id
+                row.addTarget(self, action: #selector(handleEditTask(_:)), for: .touchUpInside)
+            }
             
             return row
         }
         
         tasksGroup.setRows(rows)
         tasksGroup.isHidden = rows.isEmpty
-        addTaskButton.isEnabled = !viewModel.isSaving
+        addTaskButton.isHidden = !canEdit
+        
+        let isBusy = viewModel.savingOperation != nil
+        addTaskButton.isEnabled = !isBusy
+        tasksGroup.isUserInteractionEnabled = !isBusy
+        
+        UIView.animate(withDuration: 0.2) {
+            self.tasksGroup.alpha = self.viewModel.savingOperation == .task ? 0.5 : 1
+        }
     }
     
     private func fill(_ form: ChallengeSettingsForm) {
@@ -286,8 +304,10 @@ final class ChallengeSettingsViewController: UIViewController {
         saveButton.isHidden = !form.canEditDetails
     }
     
-    private func showToast(_ message: String) {
-        toast.configure(text: message, tone: .success, systemIcon: "checkmark")
+    private func showToast(_ message: String, tone: ToastView.Tone = .success) {
+        let isError = tone == .error
+        
+        toast.configure(text: message, tone: tone, systemIcon: isError ? "exclamationmark.triangle.fill" : "checkmark")
         toast.alpha = 0
         toast.isHidden = false
         
@@ -295,7 +315,7 @@ final class ChallengeSettingsViewController: UIViewController {
             self.toast.alpha = 1
         }
         
-        UIView.animate(withDuration: 0.2, delay: 1.5) {
+        UIView.animate(withDuration: 0.2, delay: isError ? 2.5 : 1.5) {
             self.toast.alpha = 0
         } completion: { _ in
             self.toast.isHidden = true

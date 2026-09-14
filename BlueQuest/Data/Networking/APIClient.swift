@@ -80,6 +80,13 @@ final class APIClient {
         
         _ = try await perform(request)
     }
+    
+    func delete(_ path: String) async throws {
+        var request = URLRequest(url: baseURL.appendingPathComponent(path))
+        request.httpMethod = "DELETE"
+        
+        _ = try await perform(request)
+    }
 
     private func send<Response: Decodable>(_ request: URLRequest) async throws -> Response {
         let data = try await perform(request)

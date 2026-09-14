@@ -31,6 +31,10 @@ final class ChallengeSettingsViewController: UIViewController {
     private let loadErrorStack = UIStackView()
     private let toast = ToastView()
     
+    private let tasksSection = UIStackView()
+    private let tasksGroup = ListGroupView()
+    private let addTaskButton = BQButton(title: "Adicionar tarefa", icon: "plus", variant: .secondary)
+    
     private var hasFilledForm = false
     
     init(viewModel: ChallengeSettingsViewModel) {
@@ -53,8 +57,8 @@ final class ChallengeSettingsViewController: UIViewController {
             self?.render()
         }
         
-        viewModel.onSaved = { [weak self] in
-            self?.showSavedToast()
+        viewModel.onSaved = { [weak self] message in
+            self?.showToast(message)
         }
         
         render()
@@ -80,6 +84,7 @@ final class ChallengeSettingsViewController: UIViewController {
         
         contentStack.addArrangedSubview(makeHeader())
         contentStack.addArrangedSubview(makeDetailsSection())
+        contentStack.addArrangedSubview(makeTasksSection())
         
         loadingIndicator.color = .bqText3
         loadingIndicator.hidesWhenStopped = true
@@ -197,6 +202,20 @@ final class ChallengeSettingsViewController: UIViewController {
         return detailsSection
     }
     
+    private func makeTasksSection() -> UIView {
+        addTaskButton.addTarget(self, action: #selector(handleAddTask), for: .touchUpInside)
+        
+        tasksSection.axis = .vertical
+        tasksSection.spacing = BQSpacing.sp2
+        tasksSection.isHidden = true
+        
+        [OverlineLabel("Tarefas"), tasksGroup, addTaskButton].forEach {
+            tasksSection.addArrangedSubview($0)
+        }
+        
+        return tasksSection
+    }
+    
     private func render() {
         challengeNameLabel.text = viewModel.challengeName
         
@@ -216,9 +235,32 @@ final class ChallengeSettingsViewController: UIViewController {
         
         detailsSection.isHidden = viewModel.form == nil
         
+        tasksSection.isHidden = viewModel.form == nil
+        renderTasks()
+        
         saveErrorLabel.text = viewModel.saveError
         saveErrorLabel.isHidden = viewModel.saveError == nil
         saveButton.setLoading(viewModel.isSaving)
+    }
+    
+    private func renderTasks() {
+        let rows = viewModel.tasks.map { task -> ListRowView in
+            let row = ListRowView(
+                icon: "checkmark.circle",
+                title: task.title,
+                subtitle: task.subtitle,
+                trailingIcon: "pencil"
+            )
+            
+            row.tag = task.id
+            row.addTarget(self, action: #selector(handleEditTask(_:)), for: .touchUpInside)
+            
+            return row
+        }
+        
+        tasksGroup.setRows(rows)
+        tasksGroup.isHidden = rows.isEmpty
+        addTaskButton.isEnabled = !viewModel.isSaving
     }
     
     private func fill(_ form: ChallengeSettingsForm) {
@@ -244,8 +286,8 @@ final class ChallengeSettingsViewController: UIViewController {
         saveButton.isHidden = !form.canEditDetails
     }
     
-    private func showSavedToast() {
-        toast.configure(text: "Alterações salvas", tone: .success, systemIcon: "checkmark")
+    private func showToast(_ message: String) {
+        toast.configure(text: message, tone: .success, systemIcon: "checkmark")
         toast.alpha = 0
         toast.isHidden = false
         
@@ -264,6 +306,45 @@ final class ChallengeSettingsViewController: UIViewController {
         let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
         tap.cancelsTouchesInView = false
         view.addGestureRecognizer(tap)
+    }
+    
+    private func presentTaskSheet(taskID: Int?) {
+        let values = taskID.flatMap {
+            viewModel.formValues(forTaskID: $0)
+        }
+        
+        let sheet = TaskFormSheetViewController(
+            editing: values,
+            hint: "Mudanças valem para ocorrências futuras; as já geradas mantêm a configuração original.",
+            allowsDelete: taskID != nil
+        )
+        
+        sheet.onSave = { [weak self] values in
+            Task { await self?.viewModel.saveTask(values, taskID: taskID) }
+        }
+        
+        sheet.onDelete = { [weak self] in
+            guard let taskID else { return }
+            self?.confirmDeleteTask(id: taskID)
+        }
+        
+        present(sheet, animated: true)
+    }
+    
+    private func confirmDeleteTask(id: Int) {
+        let alert = UIAlertController(
+            title: "Excluir tarefa?",
+            message: "Ela deixa de gerar ocorrências a partir de amanhã. As conclusões já registradas continuam valendo pontos.",
+            preferredStyle: .alert
+        )
+        
+        alert.addAction(UIAlertAction(title: "Excluir", style: .destructive) { [weak self] _ in
+            Task { await self?.viewModel.deleteTask(id: id) }
+        })
+        
+        alert.addAction(UIAlertAction(title: "Cancelar", style: .cancel))
+        
+        present(alert, animated: true)
     }
     
     @objc private func handleSave() {
@@ -285,6 +366,14 @@ final class ChallengeSettingsViewController: UIViewController {
     
     @objc private func handleBack() {
         onBack?()
+    }
+    
+    @objc private func handleAddTask() {
+        presentTaskSheet(taskID: nil)
+    }
+    
+    @objc private func handleEditTask(_ row: ListRowView) {
+        presentTaskSheet(taskID: row.tag)
     }
     
     @objc private func dismissKeyboard() {

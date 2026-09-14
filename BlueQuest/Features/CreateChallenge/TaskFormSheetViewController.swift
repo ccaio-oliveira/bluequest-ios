@@ -10,19 +10,28 @@ import UIKit
 
 final class TaskFormSheetViewController: UIViewController {
     var onSave: ((TaskFormValues) -> Void)?
+    var onDelete: (() -> Void)?
     
     private let formView = TaskFormView()
     private let saveButton = BQButton(title: "Salvar tarefa", size: .lg)
     private let errorLabel = UILabel()
+    private let deleteButton = BQButton(title: "Excluir", icon: "trash", variant: .danger, size: .lg)
+    private let hintLabel = UILabel()
     
     private let initialValues: TaskFormValues?
+    private let formTitle: String
+    private let hint: String?
+    private let allowsDelete: Bool
     
-    init(editing values: TaskFormValues?) {
+    init(editing values: TaskFormValues?, hint: String? = nil, allowsDelete: Bool = false) {
         initialValues = values
+        formTitle = values == nil ? "Nova tarefa" : "Editar tarefa"
+        self.hint = hint
+        self.allowsDelete = allowsDelete
         super.init(nibName: nil, bundle: nil)
         
         if let sheet = sheetPresentationController {
-            sheet.detents = [.medium(), .large()]
+            sheet.detents = [.large()]
             sheet.prefersGrabberVisible = true
             sheet.preferredCornerRadius = BQRadius.large
             sheet.prefersScrollingExpandsWhenScrolledToEdge = false
@@ -50,7 +59,22 @@ final class TaskFormSheetViewController: UIViewController {
         
         view.addSubview(scrollView)
         
-        let stack = UIStackView(arrangedSubviews: [formView, errorLabel, saveButton])
+        formView.setTitle(formTitle)
+        
+        hintLabel.text = hint
+        hintLabel.font = BQFont.body(12)
+        hintLabel.textColor = .bqText3
+        hintLabel.numberOfLines = 0
+        hintLabel.isHidden = hint == nil
+        
+        deleteButton.setContentHuggingPriority(.required, for: .horizontal)
+        deleteButton.addTarget(self, action: #selector(handleDelete), for: .touchUpInside)
+        
+        let buttonsRow = UIStackView(arrangedSubviews: allowsDelete ? [deleteButton, saveButton] : [saveButton])
+        buttonsRow.axis = .horizontal
+        buttonsRow.spacing = BQSpacing.sp2
+        
+        let stack = UIStackView(arrangedSubviews: [formView, hintLabel, errorLabel, buttonsRow])
         stack.axis = .vertical
         stack.spacing = BQSpacing.sp4
         stack.translatesAutoresizingMaskIntoConstraints = false
@@ -85,6 +109,22 @@ final class TaskFormSheetViewController: UIViewController {
         view.addGestureRecognizer(tap)
     }
     
+    private func validate(_ values: TaskFormValues) -> String? {
+        if values.name.isEmpty {
+            return "Dê um nome à tarefa."
+        }
+        
+        if values.points < 1 {
+            return "A tarefa precisa vale pelo menos 1 ponto."
+        }
+        
+        if values.weekdays.isEmpty {
+            return "Escolha pelo menos um dia."
+        }
+        
+        return nil
+    }
+    
     @objc private func dismissKeyboard() {
         view.endEditing(true)
     }
@@ -104,19 +144,8 @@ final class TaskFormSheetViewController: UIViewController {
         dismiss(animated: true)
     }
     
-    private func validate(_ values: TaskFormValues) -> String? {
-        if values.name.isEmpty {
-            return "Dê um nome à tarefa."
-        }
-        
-        if values.points < 1 {
-            return "A tarefa precisa vale pelo menos 1 ponto."
-        }
-        
-        if values.weekdays.isEmpty {
-            return "Escolha pelo menos um dia."
-        }
-        
-        return nil
+    @objc private func handleDelete() {
+        let action = onDelete
+        dismiss(animated: true) { action?() }
     }
 }

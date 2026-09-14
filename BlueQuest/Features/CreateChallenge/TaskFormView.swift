@@ -19,6 +19,7 @@ struct TaskFormValues {
 final class TaskFormView: UIView {
     var onPointsChange: (() -> Void)?
     
+    private let titleLabel = UILabel()
     private let nameField = BQTextField(label: "", placeholder: "Fazer treino", icon: "checkmark.circle")
     private let pointsField = BQTextField(label: "Pontos", placeholder: "5", icon: "bolt.fill")
     private let deadlineField = BQDateField(label: "Prazo", icon: "clock", mode: .time)
@@ -67,15 +68,18 @@ final class TaskFormView: UIView {
         updatePointsBadge()
     }
     
+    func setTitle(_ text: String) {
+        titleLabel.text = text
+    }
+    
     private func setupViews() {
         backgroundColor = .clear
         
-        let title = UILabel()
-        title.text = "Nova tarefa"
-        title.font = BQFont.display(16, weight: .semibold)
-        title.textColor = .bqText1
+        titleLabel.text = "Nova tarefa"
+        titleLabel.font = BQFont.display(16, weight: .semibold)
+        titleLabel.textColor = .bqText1
         
-        let headerRow = UIStackView(arrangedSubviews: [title, UIView(), pointsBadge])
+        let headerRow = UIStackView(arrangedSubviews: [titleLabel, UIView(), pointsBadge])
         headerRow.axis = .horizontal
         headerRow.spacing = BQSpacing.sp2
         headerRow.alignment = .center
@@ -144,8 +148,8 @@ final class TaskFormView: UIView {
         NSLayoutConstraint.activate([
             deadlineField.widthAnchor.constraint(equalTo: bottomRow.widthAnchor, multiplier: 0.55),
             
-            mainStack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: BQSpacing.cardPadding),
-            mainStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -BQSpacing.cardPadding),
+            mainStack.leadingAnchor.constraint(equalTo: leadingAnchor),
+            mainStack.trailingAnchor.constraint(equalTo: trailingAnchor),
             mainStack.topAnchor.constraint(equalTo: topAnchor, constant: BQSpacing.cardPadding),
             mainStack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -BQSpacing.cardPadding)
         ])

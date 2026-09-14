@@ -154,6 +154,10 @@ private struct UpdateChallengeRequest: Encodable {
     let endDate: String
 }
 
+private struct TaskCreatedDTO: Decodable {
+    let id: Int
+}
+
 struct TodayOccurrence {
     let taskID: Int
     let challengeID: Int
@@ -208,10 +212,14 @@ struct ChallengeDetailParticipant {
 }
 
 struct ChallengeDetailTask {
+    let id: Int
     let name: String
     let points: Int
+    let deadlineTime: String
     let deadlineText: String
     let hasPhoto: Bool
+    let recurrenceType: String
+    let weekdays: [Int]
     let recurrenceText: String
 }
 
@@ -339,10 +347,14 @@ final class ChallengeService {
             ),
             tasks: dto.tasks.map { task in
                 ChallengeDetailTask(
+                    id: task.id,
                     name: task.name,
                     points: task.points,
+                    deadlineTime: task.deadlineTime,
                     deadlineText: CalendarDayFormatter.timeText(from: task.deadlineTime),
                     hasPhoto: task.photoRequirement != "none",
+                    recurrenceType: task.recurrenceType,
+                    weekdays: task.recurrenceWeekdays ?? [],
                     recurrenceText: Self.recurrenceText(
                         type: task.recurrenceType,
                         weekdays: task.recurrenceWeekdays
@@ -363,15 +375,8 @@ final class ChallengeService {
             startDate: challenge.startDate,
             endDate: challenge.endDate,
             timezone: challenge.timezone,
-            tasks: challenge.tasks.map {
-                CreateTaskRequest(
-                    name: $0.name,
-                    points: $0.points,
-                    recurrenceType: $0.recurrenceType,
-                    recurrenceWeekdays: $0.weekdays,
-                    deadlineTime: $0.deadlineTime,
-                    photoRequirement: $0.photoRequirement
-                )
+            tasks: challenge.tasks.map { task in
+                Self.body(for: task)
             }
         )
         
@@ -419,6 +424,18 @@ final class ChallengeService {
         return dto.challengeId
     }
     
+    func createTask(challengeID: Int, _ task: NewTask) async throws {
+        let _: TaskCreatedDTO = try await client.post("challenges/\(challengeID)/tasks", body: Self.body(for: task))
+    }
+    
+    func updateTask(id: Int, _ task: NewTask) async throws {
+        try await client.put("tasks/\(id)", body: Self.body(for: task))
+    }
+    
+    func deleteTask(id: Int) async throws {
+        try await client.delete("tasks/\(id)")
+    }
+    
     private static func recurrenceText(type: String, weekdays: [Int]?) -> String {
         switch type {
         case "daily":
@@ -429,5 +446,16 @@ final class ChallengeService {
             let names = [1: "dom", 2: "seg", 3: "ter", 4: "qua", 5: "qui", 6: "sex", 7: "sáb"]
             return (weekdays ?? []).sorted().compactMap { names[$0] }.joined(separator: "/")
         }
+    }
+    
+    private static func body(for task: NewTask) -> CreateTaskRequest {
+        CreateTaskRequest(
+            name: task.name,
+            points: task.points,
+            recurrenceType: task.recurrenceType,
+            recurrenceWeekdays: task.weekdays,
+            deadlineTime: task.deadlineTime,
+            photoRequirement: task.photoRequirement
+        )
     }
 }

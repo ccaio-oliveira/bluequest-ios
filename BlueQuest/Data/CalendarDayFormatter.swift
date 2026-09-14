@@ -47,6 +47,13 @@ enum CalendarDayFormatter {
         return formatter
     }()
     
+    private static let localTimeParser: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "HH:mm"
+        return formatter
+    }()
+    
     static func periodText(from start: String, to end: String) -> String {
         guard let startDate = parser.date(from: start), let endDate = parser.date(from: end) else { return "" }
         
@@ -81,5 +88,13 @@ enum CalendarDayFormatter {
     
     static func dayString(from date: Date) -> String {
         localDay.string(from: date)
+    }
+    
+    static func localTime(from hhmm: String) -> Date? {
+        localTimeParser.date(from: hhmm)
+    }
+    
+    static func timeString(from date: Date) -> String {
+        localTimeParser.string(from: date)
     }
 }

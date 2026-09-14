@@ -14,9 +14,9 @@ final class ListRowView: UIControl {
     private let subtitleLabel = UILabel()
     private let chevronView = UIImageView()
     
-    init(icon: String, title: String, subtitle: String? = nil, showsChevron: Bool = true, isDestructive: Bool = false) {
+    init(icon: String, title: String, subtitle: String? = nil, showsChevron: Bool = true, trailingIcon: String = "chevron.right", isDestructive: Bool = false) {
         super.init(frame: .zero)
-        setupViews(icon: icon, title: title, subtitle: subtitle, showsChevron: showsChevron, isDestructive: isDestructive)
+        setupViews(icon: icon, title: title, subtitle: subtitle, showsChevron: showsChevron, trailingIcon: trailingIcon, isDestructive: isDestructive)
     }
     
     required init?(coder: NSCoder) {
@@ -29,7 +29,7 @@ final class ListRowView: UIControl {
         }
     }
     
-    private func setupViews(icon: String, title: String, subtitle: String?, showsChevron: Bool, isDestructive: Bool) {
+    private func setupViews(icon: String, title: String, subtitle: String?, showsChevron: Bool, trailingIcon: String, isDestructive: Bool) {
         backgroundColor = .bqBg1
         
         let tint: UIColor = isDestructive ? .bqRed : .bqText2
@@ -50,7 +50,7 @@ final class ListRowView: UIControl {
         subtitleLabel.numberOfLines = 0
         subtitleLabel.isHidden = subtitle == nil
         
-        chevronView.image = UIImage(systemName: "chevron.right")
+        chevronView.image = UIImage(systemName: trailingIcon)
         chevronView.tintColor = .bqText3
         chevronView.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: 14, weight: .semibold)
         chevronView.contentMode = .scaleAspectFit

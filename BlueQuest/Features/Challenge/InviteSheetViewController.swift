@@ -129,7 +129,10 @@ final class InviteSheetViewController: UIViewController {
     }
     
     private func render() {
-        if let link = viewModel.link {
+        if viewModel.isDisabled {
+            linkLabel.text = "Novos convites estão desativados."
+            linkLabel.textColor = .bqText3
+        } else if let link = viewModel.link {
             linkLabel.text = link
             linkLabel.textColor = .bqText2
         } else if let error = viewModel.errorMessage {
@@ -140,7 +143,7 @@ final class InviteSheetViewController: UIViewController {
             linkLabel.textColor = .bqText3
         }
         
-        let isReady = viewModel.link != nil
+        let isReady = viewModel.link != nil && !viewModel.isDisabled
         copyButton.isEnabled = isReady
         shareButton.isEnabled = isReady
     }

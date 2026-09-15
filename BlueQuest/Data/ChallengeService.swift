@@ -7,6 +7,206 @@
 
 import Foundation
 
+final class ChallengeService {
+    static let shared = ChallengeService()
+    
+    private let client = APIClient.shared
+    
+    private init() {}
+    
+    func today() async throws -> [TodayOccurrence] {
+        let response: TodayResponseDTO = try await client.get("today")
+        
+        return response.occurrences.map { dto in
+            TodayOccurrence(
+                taskID: dto.taskId,
+                challengeID: dto.challengeId,
+                name: dto.name,
+                points: dto.points,
+                pointsAwarded: dto.pointsAwarded,
+                state: OccurrenceState(apiValue: dto.state) ?? .available,
+                deadline: dto.deadlineAt,
+                occurrenceDate: dto.occurrenceDate,
+                hasPhoto: dto.photoRequirement != "none"
+            )
+        }
+    }
+    
+    func challenges() async throws -> [ChallengeSummary] {
+        let response: ChallengesResponseDTO = try await client.get("challenges")
+        
+        return response.challenges.map { dto in
+            ChallengeSummary(
+                id: dto.id,
+                name: dto.name,
+                periodText: CalendarDayFormatter.periodText(from: dto.startDate, to: dto.endDate),
+                state: ChallengeState(apiValue: dto.state) ?? .inProgress,
+                currentDay: dto.currentDay,
+                totalDays: dto.totalDays,
+                myPoints: dto.myPoints,
+                myRank: dto.myRank,
+                participantsCount: dto.participantsCount,
+                participantNames: dto.participants.map(\.name)
+            )
+        }
+    }
+    
+    func challengeDetail(id: Int) async throws -> ChallengeDetail {
+        let dto: ChallengeDetailDTO = try await client.get("challenges/\(id)")
+        
+        return ChallengeDetail(
+            name: dto.name,
+            description: dto.description,
+            startDate: dto.startDate,
+            endDate: dto.endDate,
+            isCreator: dto.ranking.contains { $0.isYou && $0.isCreator },
+            periodText: CalendarDayFormatter.periodText(from: dto.startDate, to: dto.endDate),
+            state: ChallengeState(apiValue: dto.state) ?? .inProgress,
+            currentDay: dto.currentDay,
+            totalDays: dto.totalDays,
+            participantsCount: dto.participantsCount,
+            participants: dto.ranking.map { participant in
+                ChallengeDetailParticipant(
+                    userID: participant.userId,
+                    name: participant.name,
+                    points: participant.points,
+                    position: participant.position,
+                    joinedText: CalendarDayFormatter.dayMonthText(from: participant.joinedAt),
+                    isCreator: participant.isCreator,
+                    isYou: participant.isYou
+                )
+            },
+            stats: ChallengeDetailStats(
+                points: dto.me.points,
+                position: dto.me.position ?? 0,
+                completedCount: dto.me.completedCount,
+                expiredCount: dto.me.expiredCount,
+                totalOccurrences: dto.me.totalOccurrences,
+                streakDays: dto.me.streakDays
+            ),
+            tasks: dto.tasks.map { task in
+                ChallengeDetailTask(
+                    id: task.id,
+                    name: task.name,
+                    points: task.points,
+                    deadlineTime: task.deadlineTime,
+                    deadlineText: CalendarDayFormatter.timeText(from: task.deadlineTime),
+                    hasPhoto: task.photoRequirement != "none",
+                    recurrenceType: task.recurrenceType,
+                    weekdays: task.recurrenceWeekdays ?? [],
+                    recurrenceText: Self.recurrenceText(
+                        type: task.recurrenceType,
+                        weekdays: task.recurrenceWeekdays
+                    )
+                )
+            }
+        )
+    }
+    
+    func completeTask(taskID: Int, occurrenceDate: String) async throws {
+        let _: CompletionResponseDTO = try await client.post("completions", body: CompleteTaskRequest(taskId: taskID, occurrenceDate: occurrenceDate))
+    }
+    
+    func create(_ challenge: NewChallenge) async throws {
+        let body = CreateChallengeRequest(
+            name: challenge.name,
+            description: challenge.description,
+            startDate: challenge.startDate,
+            endDate: challenge.endDate,
+            timezone: challenge.timezone,
+            tasks: challenge.tasks.map { task in
+                Self.body(for: task)
+            }
+        )
+        
+        let _: ChallengeSummaryDTO = try await client.post("challenges", body: body)
+    }
+    
+    func updateChallenge(id: Int, _ changes: ChallengeChanges) async throws {
+        let body = UpdateChallengeRequest(
+            name: changes.name,
+            description: changes.description,
+            startDate: changes.startDate,
+            endDate: changes.endDate
+        )
+        
+        try await client.put("challenges/\(id)", body: body)
+    }
+    
+    func invite(challengeID: Int) async throws -> ChallengeInvite {
+        let dto: InviteDTO = try await client.get("challenges/\(challengeID)/invite")
+        return ChallengeInvite(isEnabled: dto.enabled, link: dto.link, uses: dto.uses)
+    }
+    
+    func setInviteEnabled(challengeID: Int, enabled: Bool) async throws {
+        try await client.put("challenges/\(challengeID)/invite", body: InviteToggleRequest(enabled: enabled))
+    }
+    
+    func invitePreview(code: String) async throws -> InvitePreview {
+        let dto: InvitePreviewDTO = try await client.get("invites/\(code)")
+        let challenge = dto.challenge
+        
+        return InvitePreview(
+            state: InviteState(rawValue: dto.state) ?? .invalid,
+            challengeID: challenge?.id,
+            name: challenge?.name ?? "",
+            periodText: challenge.map {
+                CalendarDayFormatter.periodText(from: $0.startDate, to: $0.endDate)
+            } ?? "",
+            invitedBy: challenge?.invitedBy,
+            participantNames: challenge?.participants.map(\.name) ?? [],
+            participantsCount: challenge?.participantsCount ?? 0,
+            totalDays: challenge?.totalDays ?? 0,
+            tasksCount: challenge?.tasksCount ?? 0,
+            maxPointsPerDay: challenge?.maxPointsPerDay ?? 0
+        )
+    }
+    
+    func acceptInvite(code: String) async throws -> Int {
+        let dto: AcceptInviteDTO = try await client.post("invites/\(code)/accept", body: EmptyBody())
+        return dto.challengeId
+    }
+    
+    func createTask(challengeID: Int, _ task: NewTask) async throws {
+        let _: TaskCreatedDTO = try await client.post("challenges/\(challengeID)/tasks", body: Self.body(for: task))
+    }
+    
+    func updateTask(id: Int, _ task: NewTask) async throws {
+        try await client.put("tasks/\(id)", body: Self.body(for: task))
+    }
+    
+    func deleteTask(id: Int) async throws {
+        try await client.delete("tasks/\(id)")
+    }
+    
+    func removeParticipant(challengeID: Int, userID: Int) async throws {
+        try await client.delete("challenges/\(challengeID)/participants/\(userID)")
+    }
+    
+    private static func recurrenceText(type: String, weekdays: [Int]?) -> String {
+        switch type {
+        case "daily":
+            return "todos os dias"
+        case "once":
+            return "uma vez"
+        default:
+            let names = [1: "dom", 2: "seg", 3: "ter", 4: "qua", 5: "qui", 6: "sex", 7: "sáb"]
+            return (weekdays ?? []).sorted().compactMap { names[$0] }.joined(separator: "/")
+        }
+    }
+    
+    private static func body(for task: NewTask) -> CreateTaskRequest {
+        CreateTaskRequest(
+            name: task.name,
+            points: task.points,
+            recurrenceType: task.recurrenceType,
+            recurrenceWeekdays: task.weekdays,
+            deadlineTime: task.deadlineTime,
+            photoRequirement: task.photoRequirement
+        )
+    }
+}
+
 private struct TodayResponseDTO: Decodable {
     let date: String
     let occurrences: [OccurrenceDTO]
@@ -120,9 +320,14 @@ private struct CompletionResponseDTO: Decodable {
     let pointsAwarded: Int
 }
 
-private struct InviteLinkDTO: Decodable {
-    let code: String
-    let link: String
+private struct InviteDTO: Decodable {
+    let enabled: Bool
+    let link: String?
+    let uses: Int
+}
+
+private struct InviteToggleRequest: Encodable {
+    let enabled: Bool
 }
 
 private struct InvitePreviewDTO: Decodable {
@@ -268,198 +473,8 @@ struct ChallengeChanges {
     let endDate: String
 }
 
-final class ChallengeService {
-    static let shared = ChallengeService()
-    
-    private let client = APIClient.shared
-    
-    private init() {}
-    
-    func today() async throws -> [TodayOccurrence] {
-        let response: TodayResponseDTO = try await client.get("today")
-        
-        return response.occurrences.map { dto in
-            TodayOccurrence(
-                taskID: dto.taskId,
-                challengeID: dto.challengeId,
-                name: dto.name,
-                points: dto.points,
-                pointsAwarded: dto.pointsAwarded,
-                state: OccurrenceState(apiValue: dto.state) ?? .available,
-                deadline: dto.deadlineAt,
-                occurrenceDate: dto.occurrenceDate,
-                hasPhoto: dto.photoRequirement != "none"
-            )
-        }
-    }
-    
-    func challenges() async throws -> [ChallengeSummary] {
-        let response: ChallengesResponseDTO = try await client.get("challenges")
-        
-        return response.challenges.map { dto in
-            ChallengeSummary(
-                id: dto.id,
-                name: dto.name,
-                periodText: CalendarDayFormatter.periodText(from: dto.startDate, to: dto.endDate),
-                state: ChallengeState(apiValue: dto.state) ?? .inProgress,
-                currentDay: dto.currentDay,
-                totalDays: dto.totalDays,
-                myPoints: dto.myPoints,
-                myRank: dto.myRank,
-                participantsCount: dto.participantsCount,
-                participantNames: dto.participants.map(\.name)
-            )
-        }
-    }
-    
-    func challengeDetail(id: Int) async throws -> ChallengeDetail {
-        let dto: ChallengeDetailDTO = try await client.get("challenges/\(id)")
-        
-        return ChallengeDetail(
-            name: dto.name,
-            description: dto.description,
-            startDate: dto.startDate,
-            endDate: dto.endDate,
-            isCreator: dto.ranking.contains { $0.isYou && $0.isCreator },
-            periodText: CalendarDayFormatter.periodText(from: dto.startDate, to: dto.endDate),
-            state: ChallengeState(apiValue: dto.state) ?? .inProgress,
-            currentDay: dto.currentDay,
-            totalDays: dto.totalDays,
-            participantsCount: dto.participantsCount,
-            participants: dto.ranking.map { participant in
-                ChallengeDetailParticipant(
-                    userID: participant.userId,
-                    name: participant.name,
-                    points: participant.points,
-                    position: participant.position,
-                    joinedText: CalendarDayFormatter.dayMonthText(from: participant.joinedAt),
-                    isCreator: participant.isCreator,
-                    isYou: participant.isYou
-                )
-            },
-            stats: ChallengeDetailStats(
-                points: dto.me.points,
-                position: dto.me.position ?? 0,
-                completedCount: dto.me.completedCount,
-                expiredCount: dto.me.expiredCount,
-                totalOccurrences: dto.me.totalOccurrences,
-                streakDays: dto.me.streakDays
-            ),
-            tasks: dto.tasks.map { task in
-                ChallengeDetailTask(
-                    id: task.id,
-                    name: task.name,
-                    points: task.points,
-                    deadlineTime: task.deadlineTime,
-                    deadlineText: CalendarDayFormatter.timeText(from: task.deadlineTime),
-                    hasPhoto: task.photoRequirement != "none",
-                    recurrenceType: task.recurrenceType,
-                    weekdays: task.recurrenceWeekdays ?? [],
-                    recurrenceText: Self.recurrenceText(
-                        type: task.recurrenceType,
-                        weekdays: task.recurrenceWeekdays
-                    )
-                )
-            }
-        )
-    }
-    
-    func completeTask(taskID: Int, occurrenceDate: String) async throws {
-        let _: CompletionResponseDTO = try await client.post("completions", body: CompleteTaskRequest(taskId: taskID, occurrenceDate: occurrenceDate))
-    }
-    
-    func create(_ challenge: NewChallenge) async throws {
-        let body = CreateChallengeRequest(
-            name: challenge.name,
-            description: challenge.description,
-            startDate: challenge.startDate,
-            endDate: challenge.endDate,
-            timezone: challenge.timezone,
-            tasks: challenge.tasks.map { task in
-                Self.body(for: task)
-            }
-        )
-        
-        let _: ChallengeSummaryDTO = try await client.post("challenges", body: body)
-    }
-    
-    func updateChallenge(id: Int, _ changes: ChallengeChanges) async throws {
-        let body = UpdateChallengeRequest(
-            name: changes.name,
-            description: changes.description,
-            startDate: changes.startDate,
-            endDate: changes.endDate
-        )
-        
-        try await client.put("challenges/\(id)", body: body)
-    }
-    
-    func inviteLink(challengeID: Int) async throws -> String {
-        let dto: InviteLinkDTO = try await client.get("challenges/\(challengeID)/invite")
-        return dto.link
-    }
-    
-    func invitePreview(code: String) async throws -> InvitePreview {
-        let dto: InvitePreviewDTO = try await client.get("invites/\(code)")
-        let challenge = dto.challenge
-        
-        return InvitePreview(
-            state: InviteState(rawValue: dto.state) ?? .invalid,
-            challengeID: challenge?.id,
-            name: challenge?.name ?? "",
-            periodText: challenge.map {
-                CalendarDayFormatter.periodText(from: $0.startDate, to: $0.endDate)
-            } ?? "",
-            invitedBy: challenge?.invitedBy,
-            participantNames: challenge?.participants.map(\.name) ?? [],
-            participantsCount: challenge?.participantsCount ?? 0,
-            totalDays: challenge?.totalDays ?? 0,
-            tasksCount: challenge?.tasksCount ?? 0,
-            maxPointsPerDay: challenge?.maxPointsPerDay ?? 0
-        )
-    }
-    
-    func acceptInvite(code: String) async throws -> Int {
-        let dto: AcceptInviteDTO = try await client.post("invites/\(code)/accept", body: EmptyBody())
-        return dto.challengeId
-    }
-    
-    func createTask(challengeID: Int, _ task: NewTask) async throws {
-        let _: TaskCreatedDTO = try await client.post("challenges/\(challengeID)/tasks", body: Self.body(for: task))
-    }
-    
-    func updateTask(id: Int, _ task: NewTask) async throws {
-        try await client.put("tasks/\(id)", body: Self.body(for: task))
-    }
-    
-    func deleteTask(id: Int) async throws {
-        try await client.delete("tasks/\(id)")
-    }
-    
-    func removeParticipant(challengeID: Int, userID: Int) async throws {
-        try await client.delete("challenges/\(challengeID)/participants/\(userID)")
-    }
-    
-    private static func recurrenceText(type: String, weekdays: [Int]?) -> String {
-        switch type {
-        case "daily":
-            return "todos os dias"
-        case "once":
-            return "uma vez"
-        default:
-            let names = [1: "dom", 2: "seg", 3: "ter", 4: "qua", 5: "qui", 6: "sex", 7: "sáb"]
-            return (weekdays ?? []).sorted().compactMap { names[$0] }.joined(separator: "/")
-        }
-    }
-    
-    private static func body(for task: NewTask) -> CreateTaskRequest {
-        CreateTaskRequest(
-            name: task.name,
-            points: task.points,
-            recurrenceType: task.recurrenceType,
-            recurrenceWeekdays: task.weekdays,
-            deadlineTime: task.deadlineTime,
-            photoRequirement: task.photoRequirement
-        )
-    }
+struct ChallengeInvite {
+    let isEnabled: Bool
+    let link: String?
+    let uses: Int
 }

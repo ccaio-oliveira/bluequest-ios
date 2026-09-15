@@ -39,6 +39,9 @@ final class ChallengeSettingsViewController: UIViewController {
     private let participantsGroup = ListGroupView()
     private let removeParticipantButton = BQButton(title: "Remover participante", icon: "person.badge.minus", variant: .ghost)
     
+    private let inviteSection = UIStackView()
+    private let inviteRow = ListSwitchRowView(icon: "link")
+    
     private var hasFilledForm = false
     
     init(viewModel: ChallengeSettingsViewModel) {
@@ -94,6 +97,7 @@ final class ChallengeSettingsViewController: UIViewController {
         contentStack.addArrangedSubview(makeDetailsSection())
         contentStack.addArrangedSubview(makeTasksSection())
         contentStack.addArrangedSubview(makeParticipantsSection())
+        contentStack.addArrangedSubview(makeInviteSection())
         
         loadingIndicator.color = .bqText3
         loadingIndicator.hidesWhenStopped = true
@@ -239,6 +243,31 @@ final class ChallengeSettingsViewController: UIViewController {
         return participantsSection
     }
     
+    private func makeInviteSection() -> UIView {
+        inviteRow.onToggle = { [weak self] isOn in
+            Task { await self?.viewModel.setInviteEnabled(isOn) }
+        }
+        
+        let inviteGroup = ListGroupView()
+        inviteGroup.setRows([inviteRow])
+        
+        let hintLabel = UILabel()
+        hintLabel.text = "Desativar o link impede novas entradas; quem já participa continua no desafio."
+        hintLabel.font = BQFont.body(12)
+        hintLabel.textColor = .bqText3
+        hintLabel.numberOfLines = 0
+        
+        inviteSection.axis = .vertical
+        inviteSection.spacing = BQSpacing.sp2
+        inviteSection.isHidden = true
+        
+        [OverlineLabel("Convite"), inviteGroup, hintLabel].forEach {
+            inviteSection.addArrangedSubview($0)
+        }
+        
+        return inviteSection
+    }
+    
     private func render() {
         challengeNameLabel.text = viewModel.challengeName
         
@@ -263,6 +292,9 @@ final class ChallengeSettingsViewController: UIViewController {
         
         participantsSection.isHidden = viewModel.form == nil
         renderParticipants()
+        
+        inviteSection.isHidden = viewModel.invite == nil
+        renderInvite()
         
         saveErrorLabel.text = viewModel.saveError
         saveErrorLabel.isHidden = viewModel.saveError == nil
@@ -317,6 +349,17 @@ final class ChallengeSettingsViewController: UIViewController {
         UIView.animate(withDuration: 0.2) {
             self.participantsGroup.alpha = self.viewModel.savingOperation == .participant ? 0.5 : 1
         }
+    }
+    
+    private func renderInvite() {
+        let canEdit = viewModel.form?.canEditDetails ?? false
+        
+        inviteRow.configure(
+            title: viewModel.invite?.link ?? "Nenhum link gerado",
+            subtitle: viewModel.inviteSubtitle,
+            isOn: viewModel.isInviteEnabled,
+            isEnabled: canEdit && viewModel.savingOperation == nil
+        )
     }
     
     private func fill(_ form: ChallengeSettingsForm) {

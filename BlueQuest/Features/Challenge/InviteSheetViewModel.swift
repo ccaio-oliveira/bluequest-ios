@@ -14,6 +14,7 @@ final class InviteSheetViewModel {
     private(set) var link: String?
     private(set) var isLoading = false
     private(set) var errorMessage: String?
+    private(set) var isDisabled = false
     
     var onChange: (() -> Void)?
     
@@ -37,7 +38,9 @@ final class InviteSheetViewModel {
         }
         
         do {
-            link = try await ChallengeService.shared.inviteLink(challengeID: challengeID)
+            let invite = try await ChallengeService.shared.invite(challengeID: challengeID)
+            link = invite.link
+            isDisabled = !invite.isEnabled
         } catch {
             errorMessage = (error as? APIError)?.errorDescription ?? "Não foi possível gerar o link do convite."
         }

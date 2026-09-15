@@ -17,20 +17,31 @@ final class ChallengeSettingsViewModel {
     private(set) var form: ChallengeSettingsForm?
     private(set) var tasks: [ChallengeSettingsTaskRow] = []
     private(set) var participants: [ChallengeParticipantRow] = []
+    private(set) var invite: ChallengeInvite?
     
     var isSaving: Bool { savingOperation != nil }
     var onOperationError: ((String) -> Void)?
-    
-    private var taskValues: [Int: TaskFormValues] = [:]
-    
     var onChange: (() -> Void)?
     var onSaved: ((String) -> Void)?
+    
+    private let challengeID: Int
+    
+    private var taskValues: [Int: TaskFormValues] = [:]
+    private var pendingInviteEnabled: Bool?
     
     var removableParticipants: [ChallengeParticipantRow] {
         participants.filter { !$0.isCreator }
     }
     
-    private let challengeID: Int
+    var isInviteEnabled: Bool {
+        pendingInviteEnabled ?? invite?.isEnabled ?? false
+    }
+    
+    var inviteSubtitle: String {
+        let uses = invite?.uses ?? 0
+        let usesText = uses == 1 ? "1 uso" : "\(uses) usos"
+        return isInviteEnabled ? "Convite ativo · \(usesText)" : "Convite desativado · \(usesText)"
+    }
     
     init(challengeID: Int) {
         self.challengeID = challengeID
@@ -48,8 +59,11 @@ final class ChallengeSettingsViewModel {
         }
         
         do {
-            let detail = try await ChallengeService.shared.challengeDetail(id: challengeID)
-            apply(detail)
+            async let detail = ChallengeService.shared.challengeDetail(id: challengeID)
+            async let invite = ChallengeService.shared.invite(challengeID: challengeID)
+            
+            apply(try await detail)
+            self.invite = try await invite
         } catch {
             loadError = (error as? APIError)?.errorDescription ?? "Não foi possível carregar o desafio."
         }
@@ -130,6 +144,23 @@ final class ChallengeSettingsViewModel {
             failureMessage: "Não foi possível remover o participante."
         ) {
             try await ChallengeService.shared.removeParticipant(challengeID: challengeID, userID: userID)
+        }
+    }
+    
+    func setInviteEnabled(_ enabled: Bool) async {
+        pendingInviteEnabled = enabled
+        
+        defer {
+            pendingInviteEnabled = nil
+            onChange?()
+        }
+        
+        await runOperation(
+            .invite,
+            successMessage: enabled ? "Convite ativado" : "Convite desativado",
+            failureMessage: "Não foi possível alterar o convite."
+        ) {
+            try await ChallengeService.shared.setInviteEnabled(challengeID: challengeID, enabled: enabled)
         }
     }
     
@@ -254,4 +285,5 @@ enum ChallengeSettingsOperation {
     case details
     case task
     case participant
+    case invite
 }

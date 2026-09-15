@@ -10,6 +10,8 @@ import UIKit
 
 final class ChallengeSettingsViewController: UIViewController {
     var onBack: (() -> Void)?
+    var onEnded: (() -> Void)?
+    var onDeleted: (() -> Void)?
     
     private let viewModel: ChallengeSettingsViewModel
     
@@ -42,6 +44,10 @@ final class ChallengeSettingsViewController: UIViewController {
     private let inviteSection = UIStackView()
     private let inviteRow = ListSwitchRowView(icon: "link")
     
+    private let dangerSection = UIStackView()
+    private let endButton = BQButton(title: "Encerrar desafio agora", icon: "flag.fill", variant: .danger)
+    private let deleteButton = BQButton(title: "Excluir desafio", icon: "trash", variant: .danger)
+    
     private var hasFilledForm = false
     
     init(viewModel: ChallengeSettingsViewModel) {
@@ -72,6 +78,14 @@ final class ChallengeSettingsViewController: UIViewController {
             self?.showToast(message, tone: .error)
         }
         
+        viewModel.onEnded = { [weak self] in
+            self?.onEnded?()
+        }
+        
+        viewModel.onDeleted = { [weak self] in
+            self?.onDeleted?()
+        }
+        
         render()
         
         Task { await viewModel.load() }
@@ -98,6 +112,7 @@ final class ChallengeSettingsViewController: UIViewController {
         contentStack.addArrangedSubview(makeTasksSection())
         contentStack.addArrangedSubview(makeParticipantsSection())
         contentStack.addArrangedSubview(makeInviteSection())
+        contentStack.addArrangedSubview(makeDangerSection())
         
         loadingIndicator.color = .bqText3
         loadingIndicator.hidesWhenStopped = true
@@ -268,6 +283,21 @@ final class ChallengeSettingsViewController: UIViewController {
         return inviteSection
     }
     
+    private func makeDangerSection() -> UIView {
+        endButton.addTarget(self, action: #selector(handleEnd), for: .touchUpInside)
+        deleteButton.addTarget(self, action: #selector(handleDelete), for: .touchUpInside)
+        
+        dangerSection.axis = .vertical
+        dangerSection.spacing = BQSpacing.sp2
+        dangerSection.isHidden = true
+        
+        [OverlineLabel("Zona de perigo", color: .bqRed), endButton, deleteButton].forEach {
+            dangerSection.addArrangedSubview($0)
+        }
+        
+        return dangerSection
+    }
+    
     private func render() {
         challengeNameLabel.text = viewModel.challengeName
         
@@ -295,6 +325,11 @@ final class ChallengeSettingsViewController: UIViewController {
         
         inviteSection.isHidden = viewModel.invite == nil
         renderInvite()
+        
+        dangerSection.isHidden = viewModel.form == nil
+        endButton.isHidden = !(viewModel.form?.canEnd ?? false)
+        endButton.isEnabled = viewModel.savingOperation == nil
+        deleteButton.isEnabled = viewModel.savingOperation == nil
         
         saveErrorLabel.text = viewModel.saveError
         saveErrorLabel.isHidden = viewModel.saveError == nil
@@ -464,6 +499,18 @@ final class ChallengeSettingsViewController: UIViewController {
         present(alert, animated: true)
     }
     
+    private func confirm(title: String, message: String, actionTitle: String, action: @escaping () -> Void) {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        
+        alert.addAction(UIAlertAction(title: actionTitle, style: .destructive) { _ in
+            action()
+        })
+        
+        alert.addAction(UIAlertAction(title: "Cancelar", style: .cancel))
+        
+        present(alert, animated: true)
+    }
+    
     @objc private func handleSave() {
         view.endEditing(true)
         
@@ -506,6 +553,26 @@ final class ChallengeSettingsViewController: UIViewController {
         sheet.popoverPresentationController?.sourceView = removeParticipantButton
         
         present(sheet, animated: true)
+    }
+    
+    @objc private func handleEnd() {
+        confirm(
+            title: "Encerrar o desafio?",
+            message: "O ranking e a pontuação atuais viram o resultado final. Ninguém mais poderá concluir tarefas.",
+            actionTitle: "Encerrar"
+        ) { [weak self] in
+            Task { await self?.viewModel.endChallenge() }
+        }
+    }
+    
+    @objc private func handleDelete() {
+        confirm(
+            title: "Excluir o desafio?",
+            message: "Histórico, conclusões e pontuações serão removidos para todos os participantes. Não dá para desfazer.",
+            actionTitle: "Excluir"
+        ) { [weak self] in
+            Task { await self?.viewModel.deleteChallenge() }
+        }
     }
     
     @objc private func dismissKeyboard() {

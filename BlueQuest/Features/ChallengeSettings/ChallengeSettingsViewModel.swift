@@ -23,6 +23,8 @@ final class ChallengeSettingsViewModel {
     var onOperationError: ((String) -> Void)?
     var onChange: (() -> Void)?
     var onSaved: ((String) -> Void)?
+    var onEnded: (() -> Void)?
+    var onDeleted: (() -> Void)?
     
     private let challengeID: Int
     
@@ -164,13 +166,45 @@ final class ChallengeSettingsViewModel {
         }
     }
     
+    func endChallenge() async {
+        let ended = await runOperation(
+            .challenge,
+            successMessage: nil,
+            failureMessage: "Não foi possível encerrar o desafio.",
+            reloadsOnSuccess: false
+        ) {
+            try await ChallengeService.shared.endChallenge(id: challengeID)
+        }
+        
+        if ended {
+            onEnded?()
+        }
+    }
+    
+    func deleteChallenge() async {
+        let deleted = await runOperation(
+            .challenge,
+            successMessage: nil,
+            failureMessage: "Não foi possível excluir o desafio.",
+            reloadsOnSuccess: false
+        ) {
+            try await ChallengeService.shared.deleteChallenge(id: challengeID)
+        }
+        
+        if deleted {
+            onDeleted?()
+        }
+    }
+    
+    @discardableResult
     private func runOperation(
         _ kind: ChallengeSettingsOperation,
-        successMessage: String,
+        successMessage: String?,
         failureMessage: String,
+        reloadsOnSuccess: Bool = true,
         _ operation: () async throws -> Void
-    ) async {
-        guard !isSaving else { return }
+    ) async -> Bool {
+        guard !isSaving else { return false }
         
         savingOperation = kind
         onChange?()
@@ -182,10 +216,19 @@ final class ChallengeSettingsViewModel {
         
         do {
             try await operation()
-            await load(showingLoader: false)
-            onSaved?(successMessage)
+            
+            if reloadsOnSuccess {
+                await load(showingLoader: false)
+            }
+            
+            if let successMessage {
+                onSaved?(successMessage)
+            }
+            
+            return true
         } catch {
             onOperationError?((error as? APIError)?.errorDescription ?? failureMessage)
+            return false
         }
     }
     
@@ -246,7 +289,8 @@ final class ChallengeSettingsViewModel {
             startDate: CalendarDayFormatter.localDate(from: detail.startDate) ?? Date(),
             endDate: CalendarDayFormatter.localDate(from: detail.endDate) ?? Date(),
             canEditDetails: detail.state != .closed,
-            canEditStart: detail.state == .future
+            canEditStart: detail.state == .future,
+            canEnd: detail.state == .inProgress
         )
         
         tasks = detail.tasks.map {
@@ -266,6 +310,7 @@ struct ChallengeSettingsForm {
     let endDate: Date
     let canEditDetails: Bool
     let canEditStart: Bool
+    let canEnd: Bool
 }
 
 struct ChallengeSettingsValues {
@@ -286,4 +331,5 @@ enum ChallengeSettingsOperation {
     case task
     case participant
     case invite
+    case challenge
 }

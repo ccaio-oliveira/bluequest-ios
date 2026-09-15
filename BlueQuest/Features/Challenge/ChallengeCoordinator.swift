@@ -57,6 +57,14 @@ final class ChallengeCoordinator: Coordinator {
             self?.navigationController.popViewController(animated: true)
         }
         
+        viewController.onEnded = { [weak self] in
+            self?.navigationController.popViewController(animated: true)
+        }
+        
+        viewController.onDeleted = { [weak self] in
+            self?.navigationController.popToRootViewController(animated: true)
+        }
+        
         navigationController.pushViewController(viewController, animated: true)
     }
 }

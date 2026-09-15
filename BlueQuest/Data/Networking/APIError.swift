@@ -42,6 +42,7 @@ enum APIError: LocalizedError {
         case "start_locked": "O início não pode mudar depois que o desafio começou."
         case "start_in_past": "O início não pode ser uma data passada."
         case "end_in_past": "O término não pode ser uma data passada."
+        case "cannot_remove_creator": "O cirador não pode ser removido do desafio."
         default: "Não foi possível concluir a ação."
         }
     }

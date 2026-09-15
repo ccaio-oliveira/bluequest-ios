@@ -436,6 +436,10 @@ final class ChallengeService {
         try await client.delete("tasks/\(id)")
     }
     
+    func removeParticipant(challengeID: Int, userID: Int) async throws {
+        try await client.delete("challenges/\(challengeID)/participants/\(userID)")
+    }
+    
     private static func recurrenceText(type: String, weekdays: [Int]?) -> String {
         switch type {
         case "daily":

@@ -35,6 +35,10 @@ final class ChallengeSettingsViewController: UIViewController {
     private let tasksGroup = ListGroupView()
     private let addTaskButton = BQButton(title: "Adicionar tarefa", icon: "plus", variant: .secondary)
     
+    private let participantsSection = UIStackView()
+    private let participantsGroup = ListGroupView()
+    private let removeParticipantButton = BQButton(title: "Remover participante", icon: "person.badge.minus", variant: .ghost)
+    
     private var hasFilledForm = false
     
     init(viewModel: ChallengeSettingsViewModel) {
@@ -61,7 +65,7 @@ final class ChallengeSettingsViewController: UIViewController {
             self?.showToast(message)
         }
         
-        viewModel.onTaskError = { [weak self] message in
+        viewModel.onOperationError = { [weak self] message in
             self?.showToast(message, tone: .error)
         }
         
@@ -89,6 +93,7 @@ final class ChallengeSettingsViewController: UIViewController {
         contentStack.addArrangedSubview(makeHeader())
         contentStack.addArrangedSubview(makeDetailsSection())
         contentStack.addArrangedSubview(makeTasksSection())
+        contentStack.addArrangedSubview(makeParticipantsSection())
         
         loadingIndicator.color = .bqText3
         loadingIndicator.hidesWhenStopped = true
@@ -220,6 +225,20 @@ final class ChallengeSettingsViewController: UIViewController {
         return tasksSection
     }
     
+    private func makeParticipantsSection() -> UIView {
+        removeParticipantButton.addTarget(self, action: #selector(handleRemoveParticipant), for: .touchUpInside)
+        
+        participantsSection.axis = .vertical
+        participantsSection.spacing = BQSpacing.sp2
+        participantsSection.isHidden = true
+        
+        [OverlineLabel("Participantes"), participantsGroup, removeParticipantButton].forEach {
+            participantsSection.addArrangedSubview($0)
+        }
+        
+        return participantsSection
+    }
+    
     private func render() {
         challengeNameLabel.text = viewModel.challengeName
         
@@ -241,6 +260,9 @@ final class ChallengeSettingsViewController: UIViewController {
         
         tasksSection.isHidden = viewModel.form == nil
         renderTasks()
+        
+        participantsSection.isHidden = viewModel.form == nil
+        renderParticipants()
         
         saveErrorLabel.text = viewModel.saveError
         saveErrorLabel.isHidden = viewModel.saveError == nil
@@ -278,6 +300,22 @@ final class ChallengeSettingsViewController: UIViewController {
         
         UIView.animate(withDuration: 0.2) {
             self.tasksGroup.alpha = self.viewModel.savingOperation == .task ? 0.5 : 1
+        }
+    }
+    
+    private func renderParticipants() {
+        participantsGroup.setRows(viewModel.participants.map { row in
+            let view = ParticipantRowView()
+            view.configure(with: row)
+            return view
+        })
+        
+        let canEdit = viewModel.form?.canEditDetails ?? false
+        removeParticipantButton.isHidden = !canEdit || viewModel.removableParticipants.isEmpty
+        removeParticipantButton.isEnabled = viewModel.savingOperation == nil
+        
+        UIView.animate(withDuration: 0.2) {
+            self.participantsGroup.alpha = self.viewModel.savingOperation == .participant ? 0.5 : 1
         }
     }
     
@@ -367,6 +405,22 @@ final class ChallengeSettingsViewController: UIViewController {
         present(alert, animated: true)
     }
     
+    private func confirmRemoveParticipant(_ participant: ChallengeParticipantRow) {
+        let alert = UIAlertController(
+            title: "Remover \(participant.name)?",
+            message: "Sai do ranking, mas o histórico de conclusões é preservado.",
+            preferredStyle: .alert
+        )
+        
+        alert.addAction(UIAlertAction(title: "Remover", style: .destructive) { [weak self] _ in
+            Task { await self?.viewModel.removeParticipant(userID: participant.userID) }
+        })
+        
+        alert.addAction(UIAlertAction(title: "Cancelar", style: .cancel))
+        
+        present(alert, animated: true)
+    }
+    
     @objc private func handleSave() {
         view.endEditing(true)
         
@@ -394,6 +448,21 @@ final class ChallengeSettingsViewController: UIViewController {
     
     @objc private func handleEditTask(_ row: ListRowView) {
         presentTaskSheet(taskID: row.tag)
+    }
+    
+    @objc private func handleRemoveParticipant() {
+        let sheet = UIAlertController(title: "Remover participante", message: nil, preferredStyle: .actionSheet)
+        
+        for participant in viewModel.removableParticipants {
+            sheet.addAction(UIAlertAction(title: participant.name, style: .default) { [weak self] _ in
+                self?.confirmRemoveParticipant(participant)
+            })
+        }
+        
+        sheet.addAction(UIAlertAction(title: "Cancelar", style: .cancel))
+        sheet.popoverPresentationController?.sourceView = removeParticipantButton
+        
+        present(sheet, animated: true)
     }
     
     @objc private func dismissKeyboard() {

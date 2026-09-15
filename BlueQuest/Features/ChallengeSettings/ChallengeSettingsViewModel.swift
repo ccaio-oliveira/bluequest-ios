@@ -7,33 +7,6 @@
 
 import Foundation
 
-struct ChallengeSettingsForm {
-    let name: String
-    let description: String
-    let startDate: Date
-    let endDate: Date
-    let canEditDetails: Bool
-    let canEditStart: Bool
-}
-
-struct ChallengeSettingsValues {
-    let name: String
-    let description: String
-    let startDate: Date
-    let endDate: Date
-}
-
-struct ChallengeSettingsTaskRow {
-    let id: Int
-    let title: String
-    let subtitle: String
-}
-
-enum ChallengeSettingsOperation {
-    case details
-    case task
-}
-
 @MainActor
 final class ChallengeSettingsViewModel {
     private(set) var isLoading = false
@@ -43,14 +16,19 @@ final class ChallengeSettingsViewModel {
     private(set) var challengeName = ""
     private(set) var form: ChallengeSettingsForm?
     private(set) var tasks: [ChallengeSettingsTaskRow] = []
+    private(set) var participants: [ChallengeParticipantRow] = []
     
     var isSaving: Bool { savingOperation != nil }
-    var onTaskError: ((String) -> Void)?
+    var onOperationError: ((String) -> Void)?
     
     private var taskValues: [Int: TaskFormValues] = [:]
     
     var onChange: (() -> Void)?
     var onSaved: ((String) -> Void)?
+    
+    var removableParticipants: [ChallengeParticipantRow] {
+        participants.filter { !$0.isCreator }
+    }
     
     private let challengeID: Int
     
@@ -122,7 +100,8 @@ final class ChallengeSettingsViewModel {
     func saveTask(_ values: TaskFormValues, taskID: Int?) async {
         let task = Self.makeNewTask(from: values)
         
-        await runTaskOperation(
+        await runOperation(
+            .task,
             successMessage: taskID == nil ? "Tarefa adicionada" : "Tarefa atualizada",
             failureMessage: "Não foi possível salvar a tarefa."
         ) {
@@ -135,7 +114,8 @@ final class ChallengeSettingsViewModel {
     }
     
     func deleteTask(id: Int) async {
-        await runTaskOperation(
+        await runOperation(
+            .task,
             successMessage: "Tarefa excluída",
             failureMessage: "Não foi possível excluir a tarefa."
         ) {
@@ -143,14 +123,25 @@ final class ChallengeSettingsViewModel {
         }
     }
     
-    private func runTaskOperation(
+    func removeParticipant(userID: Int) async {
+        await runOperation(
+            .participant,
+            successMessage: "Participante removido",
+            failureMessage: "Não foi possível remover o participante."
+        ) {
+            try await ChallengeService.shared.removeParticipant(challengeID: challengeID, userID: userID)
+        }
+    }
+    
+    private func runOperation(
+        _ kind: ChallengeSettingsOperation,
         successMessage: String,
         failureMessage: String,
         _ operation: () async throws -> Void
     ) async {
         guard !isSaving else { return }
         
-        savingOperation = .task
+        savingOperation = kind
         onChange?()
         
         defer {
@@ -163,7 +154,7 @@ final class ChallengeSettingsViewModel {
             await load(showingLoader: false)
             onSaved?(successMessage)
         } catch {
-            onTaskError?((error as? APIError)?.errorDescription ?? failureMessage)
+            onOperationError?((error as? APIError)?.errorDescription ?? failureMessage)
         }
     }
     
@@ -232,5 +223,35 @@ final class ChallengeSettingsViewModel {
         }
         
         taskValues = Dictionary(uniqueKeysWithValues: detail.tasks.map { ($0.id, Self.makeFormValues(for: $0)) })
+        
+        participants = ChallengeParticipantRow.rows(from: detail.participants)
     }
+}
+
+struct ChallengeSettingsForm {
+    let name: String
+    let description: String
+    let startDate: Date
+    let endDate: Date
+    let canEditDetails: Bool
+    let canEditStart: Bool
+}
+
+struct ChallengeSettingsValues {
+    let name: String
+    let description: String
+    let startDate: Date
+    let endDate: Date
+}
+
+struct ChallengeSettingsTaskRow {
+    let id: Int
+    let title: String
+    let subtitle: String
+}
+
+enum ChallengeSettingsOperation {
+    case details
+    case task
+    case participant
 }

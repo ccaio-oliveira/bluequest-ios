@@ -63,19 +63,7 @@ final class ChallengeViewModel {
             ChallengeRankingRow(position: $0.position, name: $0.name, points: $0.points, isYou: $0.isYou)
         }
         
-        participantRows = detail.participants.map {
-            ChallengeParticipantRow(
-                name: $0.name,
-                joinedText: $0.joinedText,
-                points: $0.points,
-                isCreator: $0.isCreator,
-                isYou: $0.isYou
-            )
-        }
-        .sorted { lhs, rhs in
-            if lhs.isCreator != rhs.isCreator { return lhs.isCreator }
-            return lhs.points > rhs.points
-        }
+        participantRows = ChallengeParticipantRow.rows(from: detail.participants)
         
         personalStats = ChallengePersonalStats(
             points: detail.stats.points,
@@ -96,6 +84,25 @@ final class ChallengeViewModel {
                 ),
                 recurrenceText: "\($0.name.lowercased()) \($0.recurrenceText)"
             )
+        }
+    }
+}
+
+extension ChallengeParticipantRow {
+    static func rows(from participants: [ChallengeDetailParticipant]) -> [ChallengeParticipantRow] {
+        participants.map {
+            ChallengeParticipantRow(
+                userID: $0.userID,
+                name: $0.name,
+                joinedText: $0.joinedText,
+                points: $0.points,
+                isCreator: $0.isCreator,
+                isYou: $0.isYou
+            )
+        }
+        .sorted { lhs, rhs in
+            if lhs.isCreator != rhs.isCreator { return lhs.isCreator }
+            return lhs.points > rhs.points
         }
     }
 }
@@ -124,6 +131,7 @@ struct ChallengePersonalStats: Equatable {
 }
 
 struct ChallengeParticipantRow: Equatable {
+    let userID: Int
     let name: String
     let joinedText: String
     let points: Int

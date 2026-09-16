@@ -9,7 +9,7 @@ import Foundation
 import UIKit
 
 final class HomeViewController: UIViewController {
-    var onSelectChallenge: ((Int) -> Void)?
+    var onSelectChallenge: ((Int, ChallengeState) -> Void)?
     var onCreateChallenge: (() -> Void)?
     
     private let viewModel: HomeViewModel
@@ -288,7 +288,7 @@ final class HomeViewController: UIViewController {
             let card = ChallengeCardView()
             card.configure(with: challenge)
             card.onTap = { [weak self] in
-                self?.onSelectChallenge?(challenge.id)
+                self?.onSelectChallenge?(challenge.id, challenge.state)
             }
             challengesStack.addArrangedSubview(card)
         }

@@ -56,4 +56,13 @@ extension UIColor {
     static let bqTealDim = UIColor(red: 0.011, green: 0.210, blue: 0.201, alpha: 1)   // oklch(0.30 0.05 190)
     static let bqViolet = UIColor(red: 0.700, green: 0.560, blue: 0.936, alpha: 1)    // oklch(0.72 0.14 300) — corpo
     static let bqVioletDim = UIColor(red: 0.198, green: 0.150, blue: 0.280, alpha: 1) // oklch(0.30 0.06 300)
+    
+    static func bqMedal(for position: Int) -> UIColor {
+        switch position {
+        case 1: .bqAmber
+        case 2: .bqMedalSilver
+        case 3: .bqMedalBronze
+        default: .bqText3
+        }
+    }
 }

@@ -25,7 +25,7 @@ final class RankingRowView: UIView {
     
     func configure(with row: ChallengeRankingRow) {
         positionLabel.text = "\(row.position)"
-        positionLabel.textColor = medalColor(for: row.position)
+        positionLabel.textColor = .bqMedal(for: row.position)
         
         avatar.configure(name: row.name)
         
@@ -69,15 +69,6 @@ final class RankingRowView: UIView {
         
         backgroundColor = row.isYou ? .bqBlueDim : .clear
         layer.borderColor = (row.isYou ? UIColor.bqBlue : .clear).cgColor
-    }
-    
-    private func medalColor(for position: Int) -> UIColor {
-        switch position {
-        case 1: .bqAmber
-        case 2: .bqMedalSilver
-        case 3: .bqMedalBronze
-        default: .bqText3
-        }
     }
     
     private func setupViews() {

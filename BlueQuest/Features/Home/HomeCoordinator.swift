@@ -23,8 +23,8 @@ final class HomeCoordinator: Coordinator {
         let viewController = HomeViewController(viewModel: viewModel)
         navigationController.setViewControllers([viewController], animated: false)
         
-        viewController.onSelectChallenge = { [weak self] challengeID in
-            self?.showChallenge(id: challengeID)
+        viewController.onSelectChallenge = { [weak self] challengeID, state in
+            self?.showChallenge(id: challengeID, destination: state == .closed ? .result : .detail)
         }
         
         viewController.onCreateChallenge = { [weak self] in
@@ -34,8 +34,12 @@ final class HomeCoordinator: Coordinator {
         navigationController.setViewControllers([viewController], animated: false)
     }
     
-    private func showChallenge(id: Int) {
-        let coordinator = ChallengeCoordinator(navigationController: navigationController, challengeID: id)
+    private func showChallenge(id: Int, destination: ChallengeCoordinator.Destination) {
+        let coordinator = ChallengeCoordinator(
+            navigationController: navigationController,
+            challengeID: id,
+            destination: destination
+        )
         
         coordinator.onFinish = { [weak self, weak coordinator] in
             self?.childCoordinators.removeAll { $0 === coordinator }

@@ -69,12 +69,16 @@ final class MainTabCoordinator: Coordinator {
     }
     
     private func makeProfileTab() -> UIViewController {
-        let profile = ProfileViewController()
-        profile.onLogout = { [weak self] in
+        let navigationController = BQNavigationController()
+        
+        let coordinator = ProfileCoordinator(navigationController: navigationController)
+        coordinator.onLogout = { [weak self] in
             self?.onLogout?()
         }
         
-        let navigationController = BQNavigationController(rootViewController: profile)
+        childCoordinators.append(coordinator)
+        coordinator.start()
+        
         navigationController.tabBarItem = UITabBarItem(
             title: "Perfil",
             image: UIImage(systemName: "person"),

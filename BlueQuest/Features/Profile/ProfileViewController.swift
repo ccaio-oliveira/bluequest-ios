@@ -10,6 +10,7 @@ import UIKit
 
 final class ProfileViewController: UIViewController {
     var onLogout: (() -> Void)?
+    var onHistory: (() -> Void)?
     
     private let avatar = AvatarView(size: 72)
     private let nameLabel = UILabel()
@@ -39,10 +40,20 @@ final class ProfileViewController: UIViewController {
         )
         logoutRow.addTarget(self, action: #selector(confirmLogout), for: .touchUpInside)
         
+        let historyRow = ListRowView(
+            icon: "calendar",
+            title: "Seu histórico",
+            subtitle: "Conclusões por dia"
+        )
+        historyRow.addTarget(self, action: #selector(handleHistory), for: .touchUpInside)
+        
+        let historyGroup = ListGroupView()
+        historyGroup.setRows([historyRow])
+        
         let logoutGroup = ListGroupView()
         logoutGroup.setRows([logoutRow])
         
-        let stack = UIStackView(arrangedSubviews: [header, logoutGroup])
+        let stack = UIStackView(arrangedSubviews: [header, historyGroup, logoutGroup])
         stack.axis = .vertical
         stack.spacing = BQSpacing.sp6
         stack.translatesAutoresizingMaskIntoConstraints = false
@@ -96,5 +107,9 @@ final class ProfileViewController: UIViewController {
     
     @objc private func sessionUserDidChange() {
         renderUser()
+    }
+    
+    @objc private func handleHistory() {
+        onHistory?()
     }
 }

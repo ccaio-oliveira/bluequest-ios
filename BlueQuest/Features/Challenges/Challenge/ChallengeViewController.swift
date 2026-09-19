@@ -13,6 +13,7 @@ final class ChallengeViewController: UIViewController {
     var onFinish: (() -> Void)?
     var onInvite: ((String) -> Void)?
     var onSettings: (() -> Void)?
+    var onOpenPhoto: ((URL, String) -> Void)?
     
     private let viewModel: ChallengeViewModel
     
@@ -25,7 +26,7 @@ final class ChallengeViewController: UIViewController {
     private let progressBar = ProgressBarView()
     private let dayLabel = UILabel()
     private let remainingLabel = UILabel()
-    private let segmented = SegmentedControlView(options: ["Ranking", "Você", "Pessoas", "Tarefas"])
+    private let segmented = SegmentedControlView(options: ["Ranking", "Você", "Pessoas", "Tarefas", "Feed"])
     
     private let loadingIndicator = UIActivityIndicatorView(style: .large)
     private let errorLabel = UILabel()
@@ -131,8 +132,14 @@ final class ChallengeViewController: UIViewController {
         progressSection.axis = .vertical
         progressSection.spacing = 6
         
-        segmented.onChange = { [weak self] _ in
-            self?.renderTabContent()
+        segmented.onChange = { [weak self] index in
+            guard let self else { return }
+            
+            if index == 4 && !viewModel.hasLoaderFeed {
+                Task { await self.viewModel.loadFeed(reset: true) }
+            }
+            
+            renderTabContent()
         }
         
         tabContentStack.axis = .vertical
@@ -298,6 +305,8 @@ final class ChallengeViewController: UIViewController {
             case 3: BQSpacing.sp2
             default: BQSpacing.sp3
             }
+        case 4:
+            renderFeed()
         default:
             break
         }
@@ -342,12 +351,66 @@ final class ChallengeViewController: UIViewController {
         return card
     }
     
+    private func renderFeed() {
+        tabContentStack.spacing = BQSpacing.sp2
+        
+        guard !viewModel.feedSections.isEmpty else {
+            if viewModel.isLoadingFeed {
+                let spinner = UIActivityIndicatorView(style: .medium)
+                spinner.color = .bqText3
+                spinner.startAnimating()
+                tabContentStack.addArrangedSubview(spinner)
+            } else {
+                let label = UILabel()
+                label.text = viewModel.feedError ?? "Nenhuma conclusão ainda. Quando alguém concluir uma tarefa, ela aparece aqui."
+                label.font = BQFont.body(BQTypeScale.caption)
+                label.textColor = viewModel.feedError == nil ? .bqText3 : .bqRed
+                label.textAlignment = .center
+                label.numberOfLines = 0
+                tabContentStack.addArrangedSubview(label)
+            }
+            
+            return
+        }
+        
+        for section in viewModel.feedSections {
+            if let previous = tabContentStack.arrangedSubviews.last {
+                tabContentStack.setCustomSpacing(BQSpacing.sp5, after: previous)
+            }
+            
+            let header = OverlineLabel(section.title)
+            header.textAlignment = .center
+            tabContentStack.addArrangedSubview(header)
+            
+            for item in section.items {
+                let row = FeedRowView()
+                row.configure(with: item, timeText: viewModel.timeText(for: item))
+                row.onTap = { [weak self] in
+                    guard let self, let url = item.photoUrl else { return }
+                    onOpenPhoto?(url, viewModel.photoCaption(for: item))
+                }
+                tabContentStack.addArrangedSubview(row)
+            }
+        }
+        
+        if viewModel.canLoadMoreFeed {
+            let button = BQButton(title: "Ver mais antigas", variant: .ghost)
+            button.setLoading(viewModel.isLoadingFeed)
+            button.addTarget(self, action: #selector(handleLoadMoreFeed), for: .touchUpInside)
+            tabContentStack.addArrangedSubview(button)
+        }
+    }
+    
     @objc private func handleRetry() {
         Task { await viewModel.load() }
     }
     
     @objc private func handleRefresh() {
         Task { await viewModel.load(showingLoader: false) }
+        
+        if viewModel.hasLoaderFeed {
+            Task { await viewModel.loadFeed(reset: true) }
+        }
     }
     
     @objc private func handleBack() {
@@ -362,5 +425,9 @@ final class ChallengeViewController: UIViewController {
     
     @objc private func handleSettings() {
         onSettings?()
+    }
+    
+    @objc private func handleLoadMoreFeed() {
+        Task { await viewModel.loadFeed(reset: false)}
     }
 }

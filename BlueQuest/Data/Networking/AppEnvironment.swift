@@ -12,7 +12,7 @@ enum AppEnvironment {
         #if targetEnvironment(simulator)
         URL(string: "http://127.0.0.1:8000/api")!
         #else
-        URL(string: "http://MacBook-Pro-de-Caio.local:8000/api")!
+        URL(string: "https://a49d-2804-351c-e008-7ca0-188b-3884-2d31-cade.ngrok-free.app/api")!
         #endif
     }
 }

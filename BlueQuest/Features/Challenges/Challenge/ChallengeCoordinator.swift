@@ -81,6 +81,11 @@ final class ChallengeCoordinator: Coordinator {
             self?.showSettings()
         }
         
+        viewController.onOpenPhoto = { [weak self] url, caption in
+            let viewer = PhotoViewerViewController(url: url, caption: caption)
+            self?.navigationController.present(viewer, animated: true)
+        }
+        
         navigationController.pushViewController(viewController, animated: true)
     }
     

@@ -191,6 +191,27 @@ final class ChallengeService {
         try await client.delete("challenges/\(id)")
     }
     
+    func feed(challengeID: Int, before: Int? = nil) async throws -> ChallengeFeedPage {
+        let query = before.map { ["before": String($0)] } ?? [:]
+        let dto: FeedResponseDTO = try await client.get("challenges/\(challengeID)/feed", query: query)
+        
+        return ChallengeFeedPage(
+            items: dto.items.map { item in
+                ChallengeFeedItem(
+                    id: item.id,
+                    name: item.name,
+                    isYou: item.isYou,
+                    taskName: item.taskName,
+                    points: item.points,
+                    occurrenceDate: item.occurrenceDate,
+                    completedAt: item.completedAt,
+                    photoUrl: item.photoUrl.flatMap(URL.init(string:))
+                )
+            },
+            nextBefore: dto.nextBefore
+        )
+    }
+    
     private static func recurrenceText(type: String, weekdays: [Int]?) -> String {
         switch type {
         case "daily":
@@ -372,6 +393,22 @@ private struct TaskCreatedDTO: Decodable {
     let id: Int
 }
 
+private struct FeedResponseDTO: Decodable {
+    let items: [FeedItemDTO]
+    let nextBefore: Int?
+}
+
+private struct FeedItemDTO: Decodable {
+    let id: Int
+    let name: String
+    let isYou: Bool
+    let taskName: String
+    let points: Int
+    let occurrenceDate: String
+    let completedAt: Date
+    let photoUrl: String?
+}
+
 struct TodayOccurrence {
     let taskID: Int
     let challengeID: Int
@@ -486,4 +523,20 @@ struct ChallengeInvite {
     let isEnabled: Bool
     let link: String?
     let uses: Int
+}
+
+struct ChallengeFeedItem: Equatable {
+    let id: Int
+    let name: String
+    let isYou: Bool
+    let taskName: String
+    let points: Int
+    let occurrenceDate: String
+    let completedAt: Date
+    let photoUrl: URL?
+}
+
+struct ChallengeFeedPage {
+    let items: [ChallengeFeedItem]
+    let nextBefore: Int?
 }

@@ -92,11 +92,11 @@ final class HomeViewModel {
         }
     }
     
-    func completeTask(taskID: Int) async {
+    func completeTask(taskID: Int, photoURL: String? = nil) async {
         guard let occurrence = occurrences.first(where: { $0.taskID == taskID }), occurrence.state == .available else { return }
         
         do {
-            try await ChallengeService.shared.completeTask(taskID: taskID, occurrenceDate: occurrence.occurrenceDate)
+            try await ChallengeService.shared.completeTask(taskID: taskID, occurrenceDate: occurrence.occurrenceDate, photoURL: photoURL)
             
             onPointsAwarded?(occurrence.points)
             await load(showingLoader: false)

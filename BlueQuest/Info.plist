@@ -43,5 +43,7 @@
             </array>
         </dict>
     </array>
+    <key>NSCameraUsageDescription</key>
+    <string>Usamos a câmera para você anexar a foto da conclusão de uma tarefa.</string>
 </dict>
 </plist>

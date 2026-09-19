@@ -263,7 +263,12 @@ final class HomeViewController: UIViewController {
             card.configure(with: row.card)
             card.onComplete = { [weak self] in
                 guard let self else { return }
-                Task { await self.viewModel.completeTask(taskID: row.taskID) }
+                
+                if row.card.hasPhoto {
+                    presentPhotoSheet(for: row)
+                } else {
+                    Task { await self.viewModel.completeTask(taskID: row.taskID) }
+                }
             }
             
             tasksStack.addArrangedSubview(card)
@@ -362,6 +367,16 @@ final class HomeViewController: UIViewController {
         ])
         
         return card
+    }
+    
+    private func presentPhotoSheet(for row: HomeTaskRow) {
+        let sheet = CompletionPhotoSheetViewController(taskName: row.card.taskName, points: row.card.points)
+        
+        sheet.onFinish = { [weak self] photoURL in
+            Task { await self?.viewModel.completeTask(taskID: row.taskID, photoURL: photoURL) }
+        }
+        
+        present(sheet, animated: true)
     }
     
     @objc private func handleRetry() {

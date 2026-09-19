@@ -87,6 +87,29 @@ final class APIClient {
         
         _ = try await perform(request)
     }
+    
+    func upload<Response: Decodable>(
+        _ path: String,
+        field: String,
+        fileName: String,
+        mimeType: String,
+        data: Data
+    ) async throws -> Response {
+        let boundary = "bq-\(UUID().uuidString)"
+        
+        var request = URLRequest(url: baseURL.appendingPathComponent(path))
+        request.httpMethod = "POST"
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        request.httpBody = Self.multipartBody(
+            boundary: boundary,
+            field: field,
+            fileName: fileName,
+            mimeType: mimeType,
+            data: data
+        )
+        
+        return try await send(request)
+    }
 
     private func send<Response: Decodable>(_ request: URLRequest) async throws -> Response {
         let data = try await perform(request)
@@ -151,6 +174,24 @@ final class APIClient {
 
         return .server(status: 422)
     }
+    
+    private static func multipartBody(
+        boundary: String,
+        field: String,
+        fileName: String,
+        mimeType: String,
+        data: Data
+    ) -> Data {
+        var body = Data()
+        
+        body.append("--\(boundary)\r\n")
+        body.append("Content-Disposition: form-data; name=\"\(field)\"; filename=\"\(fileName)\"\r\n")
+        body.append("Content-Type: \(mimeType)\r\n\r\n")
+        body.append(data)
+        body.append("\r\n--\(boundary)--\r\n")
+        
+        return body
+    }
 }
 
 extension ISO8601DateFormatter {
@@ -159,4 +200,12 @@ extension ISO8601DateFormatter {
         formatter.formatOptions = [.withInternetDateTime]
         return formatter
     }()
+}
+
+private extension Data {
+    mutating func append(_ string: String) {
+        if let data = string.data(using: .utf8) {
+            append(data)
+        }
+    }
 }

@@ -13,7 +13,7 @@ struct TaskFormValues {
     let points: Int
     let weekdays: Set<Int>
     let deadline: Date
-    let allowsPhoto: Bool
+    let requiresPhoto: Bool
 }
 
 final class TaskFormView: UIView {
@@ -49,7 +49,7 @@ final class TaskFormView: UIView {
             points: Int(pointsField.text) ?? 0,
             weekdays: Set(selected),
             deadline: deadlineField.date,
-            allowsPhoto: photoSwitch.isOn
+            requiresPhoto: photoSwitch.isOn
         )
     }
     
@@ -63,7 +63,7 @@ final class TaskFormView: UIView {
         nameField.textField.text = values.name
         pointsField.textField.text = "\(values.points)"
         deadlineField.date = values.deadline
-        photoSwitch.isOn = values.allowsPhoto
+        photoSwitch.isOn = values.requiresPhoto
         selectWeekdays(values.weekdays)
         updatePointsBadge()
     }
@@ -124,7 +124,7 @@ final class TaskFormView: UIView {
         photoSwitch.setContentHuggingPriority(.required, for: .horizontal)
         
         let photoLabel = UILabel()
-        photoLabel.text = "Permitir foto"
+        photoLabel.text = "Exigir foto"
         photoLabel.font = BQFont.body(BQTypeScale.caption, weight: .semibold)
         photoLabel.textColor = .bqText2
         

@@ -10,7 +10,7 @@ import PhotosUI
 import UIKit
 
 final class CompletionPhotoSheetViewController: UIViewController {
-    var onFinish: ((String?) -> Void)?
+    var onFinish: ((String) -> Void)?
     
     private enum Step {
         case choose, uploading, failed, done
@@ -90,15 +90,12 @@ final class CompletionPhotoSheetViewController: UIViewController {
     
     private func makeChooseViews() -> [UIView] {
         let hint = UILabel()
-        hint.text = "Foto é opcional nesta tarefa · +\(points) pts"
+        hint.text = "Esta tarefa exige foto · +\(points) pts"
         hint.font = BQFont.body(BQTypeScale.caption)
         hint.textColor = .bqText3
         
         let galleryButton = BQButton(title: "Escolher da galeria", icon: "photo.on.rectangle", variant: .secondary, size: .lg)
         galleryButton.addTarget(self, action: #selector(handleGallery), for: .touchUpInside)
-        
-        let skipButton = BQButton(title: "Concluir sem foto", variant: .ghost, size: .lg)
-        skipButton.addTarget(self, action: #selector(handleSkip), for: .touchUpInside)
         
         var views: [UIView] = [hint]
         
@@ -108,7 +105,7 @@ final class CompletionPhotoSheetViewController: UIViewController {
             views.append(cameraButton)
         }
         
-        views.append(contentsOf: [galleryButton, skipButton])
+        views.append(galleryButton)
         
         return views
     }
@@ -154,10 +151,10 @@ final class CompletionPhotoSheetViewController: UIViewController {
         let retryButton = BQButton(title: "Tentar de novo", icon: "arrow.clockwise", size: .lg)
         retryButton.addTarget(self, action: #selector(handleRetry), for: .touchUpInside)
         
-        let skipButton = BQButton(title: "Concluir sem foto", variant: .ghost, size: .lg)
-        skipButton.addTarget(self, action: #selector(handleSkip), for: .touchUpInside)
+        let otherButton = BQButton(title: "Escolher outra foto", variant: .ghost, size: .lg)
+            otherButton.addTarget(self, action: #selector(handleChooseAgain), for: .touchUpInside)
         
-        return [banner, retryButton, skipButton]
+        return [banner, retryButton, otherButton]
     }
     
     private func makeDoneViews() -> [UIView] {
@@ -196,7 +193,7 @@ final class CompletionPhotoSheetViewController: UIViewController {
         }
     }
     
-    private func finish(with url: String?) {
+    private func finish(with url: String) {
         let handler = onFinish
         onFinish = nil
         
@@ -231,8 +228,8 @@ final class CompletionPhotoSheetViewController: UIViewController {
         upload(pickedImage)
     }
     
-    @objc private func handleSkip() {
-        finish(with: nil)
+    @objc private func handleChooseAgain() {
+        step = .choose
     }
 }
 
@@ -253,7 +250,7 @@ extension CompletionPhotoSheetViewController: PHPickerViewControllerDelegate {
 }
 
 extension CompletionPhotoSheetViewController: UIImagePickerControllerDelegate, UINavigationControllerDelegate {
-    func imagePickerController(
+    func imagePickerConTotroller(
         _ picker: UIImagePickerController,
         didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]
     ) {

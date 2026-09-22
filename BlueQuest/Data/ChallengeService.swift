@@ -237,7 +237,6 @@ final class ChallengeService {
 }
 
 private struct TodayResponseDTO: Decodable {
-    let date: String
     let occurrences: [OccurrenceDTO]
 }
 

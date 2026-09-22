@@ -114,7 +114,7 @@ final class CreateChallengeViewModel {
                     recurrenceType: isEveryDay ? "daily" : "weekdays",
                     weekdays: isEveryDay ? nil : task.weekdays.sorted(),
                     deadlineTime: Self.timeFormatter.string(from: task.deadline),
-                    photoRequirement: task.allowsPhoto ? "optional" : "none"
+                    photoRequirement: task.requiresPhoto ? "required" : "none"
                 )
             }
         )

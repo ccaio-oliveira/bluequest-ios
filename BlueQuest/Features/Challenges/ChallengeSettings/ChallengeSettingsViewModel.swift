@@ -238,7 +238,7 @@ final class ChallengeSettingsViewModel {
         var parts = [recurrence, "até \(task.deadlineText)", "+\(task.points) pts"]
         
         if task.hasPhoto {
-            parts.append("foto opcional")
+            parts.append("com foto")
         }
         
         return parts.joined(separator: " · ")
@@ -250,7 +250,7 @@ final class ChallengeSettingsViewModel {
             points: task.points,
             weekdays: task.recurrenceType == "daily" ? Set(1...7) : Set(task.weekdays),
             deadline: CalendarDayFormatter.localTime(from: task.deadlineTime) ?? Date(),
-            allowsPhoto: task.hasPhoto
+            requiresPhoto: task.hasPhoto
         )
     }
     
@@ -263,7 +263,7 @@ final class ChallengeSettingsViewModel {
             recurrenceType: isEveryDay ? "daily" : "weekdays",
             weekdays: isEveryDay ? nil : values.weekdays.sorted(),
             deadlineTime: CalendarDayFormatter.timeString(from: values.deadline),
-            photoRequirement: values.allowsPhoto ? "optional" : "none"
+            photoRequirement: values.requiresPhoto ? "required" : "none"
         )
     }
     

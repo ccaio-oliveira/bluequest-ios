@@ -20,6 +20,5 @@ struct ChallengeTask: Identifiable, Codable {
 
 enum PhotoRequirement: String, Codable {
     case none
-    case optional
     case required
 }

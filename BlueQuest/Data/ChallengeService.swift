@@ -103,8 +103,8 @@ final class ChallengeService {
         )
     }
     
-    func completeTask(taskID: Int, occurrenceDate: String, photoURL: String? = nil) async throws {
-        let _: CompletionResponseDTO = try await client.post("completions", body: CompleteTaskRequest(taskId: taskID, occurrenceDate: occurrenceDate, photoUrl: photoURL))
+    func completeTask(taskID: Int, occurrenceDate: String, photoPath: String? = nil) async throws {
+        let _: CompletionResponseDTO = try await client.post("completions", body: CompleteTaskRequest(taskId: taskID, occurrenceDate: occurrenceDate, photoPath: photoPath))
     }
     
     func create(_ challenge: NewChallenge) async throws {
@@ -313,7 +313,7 @@ private struct DetailStatsDTO: Decodable {
 private struct CompleteTaskRequest: Encodable {
     let taskId: Int
     let occurrenceDate: String
-    let photoUrl: String?
+    let photoPath: String?
 }
 
 private struct CreateTaskRequest: Encodable {

@@ -372,8 +372,8 @@ final class HomeViewController: UIViewController {
     private func presentPhotoSheet(for row: HomeTaskRow) {
         let sheet = CompletionPhotoSheetViewController(taskName: row.card.taskName, points: row.card.points)
         
-        sheet.onFinish = { [weak self] photoURL in
-            Task { await self?.viewModel.completeTask(taskID: row.taskID, photoURL: photoURL) }
+        sheet.onFinish = { [weak self] photoPath in
+            Task { await self?.viewModel.completeTask(taskID: row.taskID, photoPath: photoPath) }
         }
         
         present(sheet, animated: true)

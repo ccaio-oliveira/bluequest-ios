@@ -182,22 +182,22 @@ final class CompletionPhotoSheetViewController: UIViewController {
         
         Task {
             do {
-                let url = try await PhotoService.shared.uploadCompletionPhoto(image)
+                let path = try await PhotoService.shared.uploadCompletionPhoto(image)
                 
                 step = .done
                 try? await Task.sleep(for: .milliseconds(700))
-                finish(with: url)
+                finish(with: path)
             } catch {
                 step = .failed
             }
         }
     }
     
-    private func finish(with url: String) {
+    private func finish(with path: String) {
         let handler = onFinish
         onFinish = nil
         
-        dismiss(animated: true) { handler?(url) }
+        presentingViewController?.dismiss(animated: true) { handler?(path) }
     }
     
     @objc private func handleCamera() {
@@ -250,7 +250,7 @@ extension CompletionPhotoSheetViewController: PHPickerViewControllerDelegate {
 }
 
 extension CompletionPhotoSheetViewController: UIImagePickerControllerDelegate, UINavigationControllerDelegate {
-    func imagePickerConTotroller(
+    func imagePickerController(
         _ picker: UIImagePickerController,
         didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]
     ) {

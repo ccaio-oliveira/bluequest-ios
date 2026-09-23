@@ -28,7 +28,7 @@ final class PhotoService {
             data: data
         )
         
-        return dto.url
+        return dto.path
     }
     
     private static func jpegData(from image: UIImage, maxDimension: CGFloat = 1280, quality: CGFloat = 0.8) -> Data? {
@@ -48,5 +48,5 @@ final class PhotoService {
 }
 
 private struct UploadedPhotoDTO: Decodable {
-    let url: String
+    let path: String
 }

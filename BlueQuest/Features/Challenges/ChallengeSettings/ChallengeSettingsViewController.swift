@@ -451,6 +451,7 @@ final class ChallengeSettingsViewController: UIViewController {
         
         let sheet = TaskFormSheetViewController(
             editing: values,
+            dateRange: viewModel.taskDateRange,
             hint: "Mudanças valem para ocorrências futuras; as já geradas mantêm a configuração original.",
             allowsDelete: taskID != nil
         )

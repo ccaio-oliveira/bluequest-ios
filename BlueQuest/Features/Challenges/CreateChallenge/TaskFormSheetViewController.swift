@@ -19,13 +19,20 @@ final class TaskFormSheetViewController: UIViewController {
     private let hintLabel = UILabel()
     
     private let initialValues: TaskFormValues?
+    private let dateRange: ClosedRange<Date>?
     private let formTitle: String
     private let hint: String?
     private let allowsDelete: Bool
     
-    init(editing values: TaskFormValues?, hint: String? = nil, allowsDelete: Bool = false) {
+    init(
+        editing values: TaskFormValues?,
+        dateRange: ClosedRange<Date>? = nil,
+        hint: String? = nil,
+        allowsDelete: Bool = false
+    ) {
         initialValues = values
         formTitle = values == nil ? "Nova tarefa" : "Editar tarefa"
+        self.dateRange = dateRange
         self.hint = hint
         self.allowsDelete = allowsDelete
         super.init(nibName: nil, bundle: nil)
@@ -98,6 +105,8 @@ final class TaskFormSheetViewController: UIViewController {
             
         ])
         
+        formView.dateRange = dateRange
+        
         if let initialValues {
             formView.configure(with: initialValues)
         } else {
@@ -115,7 +124,19 @@ final class TaskFormSheetViewController: UIViewController {
         }
         
         if values.points < 1 {
-            return "A tarefa precisa vale pelo menos 1 ponto."
+            return "A tarefa precisa valer pelo menos 1 ponto."
+        }
+        
+        if values.mode == .dates {
+            if values.dates.isEmpty {
+                return "Adicione pelo menos uma data."
+            }
+            
+            if let dateRange, let last = values.dates.last, let parsed = CalendarDayFormatter.localDate(from: last), parsed > dateRange.upperBound {
+                return "As datas precisam estar dentro do período do desafio."
+            }
+            
+            return nil
         }
         
         if values.weekdays.isEmpty {

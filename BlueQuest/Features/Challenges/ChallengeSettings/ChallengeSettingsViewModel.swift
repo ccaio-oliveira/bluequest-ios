@@ -45,6 +45,18 @@ final class ChallengeSettingsViewModel {
         return isInviteEnabled ? "Convite ativo · \(usesText)" : "Convite desativado · \(usesText)"
     }
     
+    var taskDateRange: ClosedRange<Date>? {
+        guard let form else { return nil }
+        
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let tomorrow = calendar.date(byAdding: .day, value: 1, to: today) ?? today
+        let lower = max(calendar.startOfDay(for: form.startDate), tomorrow)
+        let upper = calendar.startOfDay(for: form.endDate)
+        
+        return lower <= upper ? lower...upper : nil
+    }
+    
     init(challengeID: Int) {
         self.challengeID = challengeID
     }
@@ -114,7 +126,7 @@ final class ChallengeSettingsViewModel {
     }
     
     func saveTask(_ values: TaskFormValues, taskID: Int?) async {
-        let task = Self.makeNewTask(from: values)
+        let task = NewTask(from: values)
         
         await runOperation(
             .task,
@@ -248,22 +260,11 @@ final class ChallengeSettingsViewModel {
         TaskFormValues(
             name: task.name,
             points: task.points,
+            mode: task.recurrenceType == "dates" ? .dates : .weekly,
             weekdays: task.recurrenceType == "daily" ? Set(1...7) : Set(task.weekdays),
+            dates: task.dates,
             deadline: CalendarDayFormatter.localTime(from: task.deadlineTime) ?? Date(),
             requiresPhoto: task.hasPhoto
-        )
-    }
-    
-    private static func makeNewTask(from values: TaskFormValues) -> NewTask {
-        let isEveryDay = values.weekdays.count == 7
-        
-        return NewTask(
-            name: values.name,
-            points: values.points,
-            recurrenceType: isEveryDay ? "daily" : "weekdays",
-            weekdays: isEveryDay ? nil : values.weekdays.sorted(),
-            deadlineTime: CalendarDayFormatter.timeString(from: values.deadline),
-            photoRequirement: values.requiresPhoto ? "required" : "none"
         )
     }
     

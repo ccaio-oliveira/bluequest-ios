@@ -145,7 +145,8 @@ final class CreateChallengeViewController: UIViewController {
     
     private func presentTaskSheet(editingIndex: Int?) {
         let existing = editingIndex.map { taskDrafts[$0] }
-        let sheet = TaskFormSheetViewController(editing: existing)
+        let range = startField.date <= endField.date ? startField.date...endField.date : nil
+        let sheet = TaskFormSheetViewController(editing: existing, dateRange: range)
         
         sheet.onSave = { [weak self] values in
             guard let self else { return }

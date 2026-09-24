@@ -10,6 +10,10 @@ import UIKit
 
 extension TaskFormValues {
     var recurrenceSummary: String {
+        if mode == .dates {
+            return dates.count == 1 ? "1 data" : "\(dates.count) datas"
+        }
+        
         if weekdays.count == 7 {
             return "Todos os dias"
         }

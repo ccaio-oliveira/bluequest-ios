@@ -30,13 +30,6 @@ final class CreateChallengeViewModel {
         return formatter
     }()
     
-    private static let timeFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.dateFormat = "HH:mm"
-        return formatter
-    }()
-    
     func save(_ form: ChallengeFormValues) async {
         guard !isSaving else { return }
         
@@ -88,7 +81,11 @@ final class CreateChallengeViewModel {
                 return "A tarefa \(position) precisa valer pelo menos 1 ponto."
             }
             
-            if task.weekdays.isEmpty {
+            if task.mode == .dates {
+                if task.dates.isEmpty {
+                    return "Adicione pelo menos uma data para a tarefa \(position)."
+                }
+            } else if task.weekdays.isEmpty {
                 return "Escolha pelo menos um dia para a tarefa \(position)."
             }
         }
@@ -105,18 +102,7 @@ final class CreateChallengeViewModel {
             startDate: Self.dayFormatter.string(from: form.startDate),
             endDate: Self.dayFormatter.string(from: form.endDate),
             timezone: TimeZone.current.identifier,
-            tasks: form.tasks.map { task in
-                let isEveryDay = task.weekdays.count == 7
-                
-                return NewTask(
-                    name: task.name,
-                    points: task.points,
-                    recurrenceType: isEveryDay ? "daily" : "weekdays",
-                    weekdays: isEveryDay ? nil : task.weekdays.sorted(),
-                    deadlineTime: Self.timeFormatter.string(from: task.deadline),
-                    photoRequirement: task.requiresPhoto ? "required" : "none"
-                )
-            }
+            tasks: form.tasks.map(NewTask.init(from:))
         )
     }
 }

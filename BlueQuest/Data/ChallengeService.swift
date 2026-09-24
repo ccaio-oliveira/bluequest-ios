@@ -94,9 +94,11 @@ final class ChallengeService {
                     hasPhoto: task.photoRequirement != "none",
                     recurrenceType: task.recurrenceType,
                     weekdays: task.recurrenceWeekdays ?? [],
+                    dates: task.recurrenceDates ?? [],
                     recurrenceText: Self.recurrenceText(
                         type: task.recurrenceType,
-                        weekdays: task.recurrenceWeekdays
+                        weekdays: task.recurrenceWeekdays,
+                        dates: task.recurrenceDates
                     )
                 )
             }
@@ -212,12 +214,18 @@ final class ChallengeService {
         )
     }
     
-    private static func recurrenceText(type: String, weekdays: [Int]?) -> String {
+    private static func recurrenceText(type: String, weekdays: [Int]?, dates: [String]?) -> String {
         switch type {
         case "daily":
             return "todos os dias"
-        case "once":
-            return "uma vez"
+        case "dates":
+            let dates = dates ?? []
+            
+            if dates.count > 3 {
+                return "\(dates.count) datas"
+            }
+            
+            return dates.map { CalendarDayFormatter.dayMonthText(from: $0) }.joined(separator: ", ")
         default:
             let names = [1: "dom", 2: "seg", 3: "ter", 4: "qua", 5: "qui", 6: "sex", 7: "sáb"]
             return (weekdays ?? []).sorted().compactMap { names[$0] }.joined(separator: "/")
@@ -230,6 +238,7 @@ final class ChallengeService {
             points: task.points,
             recurrenceType: task.recurrenceType,
             recurrenceWeekdays: task.weekdays,
+            recurrenceDates: task.dates,
             deadlineTime: task.deadlineTime,
             photoRequirement: task.photoRequirement
         )
@@ -321,6 +330,7 @@ private struct CreateTaskRequest: Encodable {
     let points: Int
     let recurrenceType: String
     let recurrenceWeekdays: [Int]?
+    let recurrenceDates: [String]?
     let deadlineTime: String
     let photoRequirement: String
 }
@@ -333,6 +343,7 @@ private struct DetailTaskDTO: Decodable {
     let photoRequirement: String
     let recurrenceType: String
     let recurrenceWeekdays: [Int]?
+    let recurrenceDates: [String]?
 }
 
 private struct CreateChallengeRequest: Encodable {
@@ -447,6 +458,7 @@ struct NewTask {
     let points: Int
     let recurrenceType: String
     let weekdays: [Int]?
+    let dates: [String]?
     let deadlineTime: String
     let photoRequirement: String
 }
@@ -470,6 +482,7 @@ struct ChallengeDetailTask {
     let hasPhoto: Bool
     let recurrenceType: String
     let weekdays: [Int]
+    let dates: [String]
     let recurrenceText: String
 }
 

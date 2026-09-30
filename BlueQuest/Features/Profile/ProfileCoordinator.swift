@@ -27,11 +27,25 @@ final class ProfileCoordinator: Coordinator {
             self?.showHistory()
         }
         
+        viewController.onNotifications = { [weak self] in
+            self?.showNotificationPreferences()
+        }
+        
         navigationController.setViewControllers([viewController], animated: false)
     }
     
     private func showHistory() {
         let viewController = HistoryViewController(viewModel: HistoryViewModel())
+        
+        viewController.onBack = { [weak self] in
+            self?.navigationController.popViewController(animated: true)
+        }
+        
+        navigationController.pushViewController(viewController, animated: true)
+    }
+    
+    private func showNotificationPreferences() {
+        let viewController = NotificationPreferencesViewController(viewModel: NotificationPreferencesViewModel())
         
         viewController.onBack = { [weak self] in
             self?.navigationController.popViewController(animated: true)

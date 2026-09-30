@@ -31,6 +31,10 @@ final class HomeCoordinator: Coordinator {
             self?.showCreateChallenge()
         }
         
+        viewController.onOpenNotifications = { [weak self] in
+            self?.showNotifications()
+        }
+        
         navigationController.setViewControllers([viewController], animated: false)
     }
     
@@ -58,5 +62,33 @@ final class HomeCoordinator: Coordinator {
         
         childCoordinators.append(coordinator)
         coordinator.start()
+    }
+    
+    private func showNotifications() {
+        let viewController = NotificationsViewController(viewModel: NotificationsViewModel())
+        
+        viewController.onBack = { [weak self] in
+            self?.navigationController.popViewController(animated: true)
+        }
+        
+        viewController.onPreferences = { [weak self] in
+            self?.showNotificationPreferences()
+        }
+        
+        viewController.onSelectChallenge = { [weak self] challengeID, opensResult in
+            self?.showChallenge(id: challengeID, destination: opensResult ? .result : .detail)
+        }
+        
+        navigationController.pushViewController(viewController, animated: true)
+    }
+    
+    private func showNotificationPreferences() {
+        let viewController = NotificationPreferencesViewController(viewModel: NotificationPreferencesViewModel())
+        
+        viewController.onBack = { [weak self] in
+            self?.navigationController.popViewController(animated: true)
+        }
+        
+        navigationController.pushViewController(viewController, animated: true)
     }
 }

@@ -11,6 +11,7 @@ import UIKit
 final class HomeViewController: UIViewController {
     var onSelectChallenge: ((Int, ChallengeState) -> Void)?
     var onCreateChallenge: (() -> Void)?
+    var onOpenNotifications: (() -> Void)?
     
     private let viewModel: HomeViewModel
 
@@ -75,6 +76,10 @@ final class HomeViewController: UIViewController {
         
         viewModel.onActionError = { [weak self] message in
             self?.showErrorToast(message)
+        }
+        
+        headerView.onNotificationsTap = { [weak self] in
+            self?.onOpenNotifications?()
         }
         
         Task {

@@ -14,13 +14,14 @@ final class HomeViewModel {
     private(set) var rows: [HomeTaskRow] = []
     private(set) var allChallenges: [HomeChallengeRow] = []
     private(set) var filter: ChallengeFilter = .inProgress
-    private(set) var header = HomeHeader(dateText: "", points: 0, completedCount: 0, doableCount: 0)
+    private(set) var header = HomeHeader(dateText: "", points: 0, completedCount: 0, doableCount: 0, unreadNotifications: 0)
     
     var onChange: (() -> Void)?
     var onPointsAwarded: ((Int) -> Void)?
     var onActionError: ((String) -> Void)?
     
     private var occurrences: [TodayOccurrence] = []
+    private var unreadNotifications = 0
     
     private lazy var timeFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -77,8 +78,10 @@ final class HomeViewModel {
         do {
             async let todayRequest = ChallengeService.shared.today()
             async let challengesRequest = ChallengeService.shared.challenges()
+            async let unreadRequest = NotificationService.shared.unreadCount()
             
             let (today, summaries) = try await (todayRequest, challengesRequest)
+            unreadNotifications = (try? await unreadRequest) ?? 0
             
             occurrences = today
             
@@ -141,7 +144,8 @@ final class HomeViewModel {
             dateText: "Hoje · \(weekday)",
             points: occurrences.compactMap(\.pointsAwarded).reduce(0, +),
             completedCount: occurrences.filter { $0.state == .completed }.count,
-            doableCount: occurrences.filter { $0.state != .future && !$0.isOptional }.count
+            doableCount: occurrences.filter { $0.state != .future && !$0.isOptional }.count,
+            unreadNotifications: unreadNotifications
         )
     }
     
@@ -180,6 +184,7 @@ struct HomeHeader: Equatable {
     let points: Int
     let completedCount: Int
     let doableCount: Int
+    let unreadNotifications: Int
 }
 
 struct HomeChallengeRow: Equatable {

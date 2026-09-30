@@ -11,6 +11,7 @@ import UIKit
 final class ProfileViewController: UIViewController {
     var onLogout: (() -> Void)?
     var onHistory: (() -> Void)?
+    var onNotifications: (() -> Void)?
     
     private let avatar = AvatarView(size: 72)
     private let nameLabel = UILabel()
@@ -40,6 +41,13 @@ final class ProfileViewController: UIViewController {
         )
         logoutRow.addTarget(self, action: #selector(confirmLogout), for: .touchUpInside)
         
+        let notificationsRow = ListRowView(
+            icon: "bell",
+            title: "Notificações",
+            subtitle: "Lembretes e avisos dos desafios"
+        )
+        notificationsRow.addTarget(self, action: #selector(handleNotifications), for: .touchUpInside)
+        
         let historyRow = ListRowView(
             icon: "calendar",
             title: "Seu histórico",
@@ -48,7 +56,7 @@ final class ProfileViewController: UIViewController {
         historyRow.addTarget(self, action: #selector(handleHistory), for: .touchUpInside)
         
         let historyGroup = ListGroupView()
-        historyGroup.setRows([historyRow])
+        historyGroup.setRows([notificationsRow, historyRow])
         
         let logoutGroup = ListGroupView()
         logoutGroup.setRows([logoutRow])
@@ -111,5 +119,9 @@ final class ProfileViewController: UIViewController {
     
     @objc private func handleHistory() {
         onHistory?()
+    }
+    
+    @objc private func handleNotifications() {
+        onNotifications?()
     }
 }

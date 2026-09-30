@@ -37,8 +37,11 @@ final class BannerView: UIView {
         }
     }
     
+    var onAction: (() -> Void)?
+    
     private let iconView = UIImageView()
     private let label = UILabel()
+    private let actionButton = UIButton(type: .system)
     
     init() {
         super.init(frame: .zero)
@@ -49,12 +52,16 @@ final class BannerView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
     
-    func configure(text: String, tone: Tone, systemIcon: String? = nil) {
+    func configure(text: String, tone: Tone, systemIcon: String? = nil, actionTitle: String? = nil) {
         label.text = text
         label.textColor = tone.foreground
         
         iconView.image = UIImage(systemName: systemIcon ?? tone.icon)
         iconView.tintColor = tone.foreground
+        
+        actionButton.setTitle(actionTitle, for: .normal)
+        actionButton.setTitleColor(tone.foreground, for: .normal)
+        actionButton.isHidden = actionTitle == nil
         
         backgroundColor = tone.background
     }
@@ -69,7 +76,13 @@ final class BannerView: UIView {
         label.font = BQFont.body(BQTypeScale.caption, weight: .medium)
         label.numberOfLines = 0
         
-        let stack = UIStackView(arrangedSubviews: [iconView, label])
+        actionButton.titleLabel?.font = BQFont.body(BQTypeScale.caption, weight: .bold)
+        actionButton.setContentHuggingPriority(.required, for: .horizontal)
+        actionButton.setContentCompressionResistancePriority(.required, for: .horizontal)
+        actionButton.isHidden = true
+        actionButton.addTarget(self, action: #selector(handleAction), for: .touchUpInside)
+        
+        let stack = UIStackView(arrangedSubviews: [iconView, label, actionButton])
         stack.axis = .horizontal
         stack.spacing = 10
         stack.alignment = .center
@@ -83,5 +96,9 @@ final class BannerView: UIView {
             stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14),
             stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14)
         ])
+    }
+    
+    @objc private func handleAction() {
+        onAction?()
     }
 }

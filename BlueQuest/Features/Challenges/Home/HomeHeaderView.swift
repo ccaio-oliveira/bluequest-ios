@@ -15,6 +15,7 @@ final class HomeHeaderView: UIView {
     private let pointsLabel = UILabel()
     private let notificationsButton = UIButton(type: .system)
     private let ring = ProgressRingView(size: 60)
+    private let unreadDot = UIView()
     
     init() {
         super.init(frame: .zero)
@@ -50,6 +51,8 @@ final class HomeHeaderView: UIView {
             total: header.doableCount,
             text: "\(header.completedCount)/\(header.doableCount)"
         )
+        
+        unreadDot.isHidden = header.unreadNotifications == 0
     }
     
     private func setupViews() {
@@ -67,6 +70,13 @@ final class HomeHeaderView: UIView {
         notificationsButton.addTarget(self, action: #selector(handleNotifications), for: .touchUpInside)
         notificationsButton.translatesAutoresizingMaskIntoConstraints = false
         
+        unreadDot.backgroundColor = .bqBlueBright
+        unreadDot.layer.cornerRadius = 4
+        unreadDot.isUserInteractionEnabled = false
+        unreadDot.isHidden = true
+        unreadDot.translatesAutoresizingMaskIntoConstraints = false
+        notificationsButton.addSubview(unreadDot)
+        
         let rightStack = UIStackView(arrangedSubviews: [notificationsButton, ring])
         rightStack.axis = .horizontal
         rightStack.spacing = 10
@@ -82,6 +92,11 @@ final class HomeHeaderView: UIView {
         NSLayoutConstraint.activate([
             notificationsButton.widthAnchor.constraint(equalToConstant: BQSpacing.hitTarget),
             notificationsButton.heightAnchor.constraint(equalToConstant: BQSpacing.hitTarget),
+            
+            unreadDot.widthAnchor.constraint(equalToConstant: 8),
+            unreadDot.heightAnchor.constraint(equalToConstant: 8),
+            unreadDot.topAnchor.constraint(equalTo: notificationsButton.topAnchor, constant: 10),
+            unreadDot.trailingAnchor.constraint(equalTo: notificationsButton.trailingAnchor, constant: -10),
             
             mainStack.leadingAnchor.constraint(equalTo: leadingAnchor),
             mainStack.trailingAnchor.constraint(equalTo: trailingAnchor),

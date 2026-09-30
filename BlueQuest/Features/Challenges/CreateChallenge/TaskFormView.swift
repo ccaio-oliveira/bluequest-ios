@@ -9,8 +9,9 @@ import Foundation
 import UIKit
 
 enum TaskRecurrenceMode: Int {
-    case weekly = 0
-    case dates = 1
+    case fixedDays = 0
+    case timesPerWeek = 1
+    case dates = 2
 }
 
 struct TaskFormValues {
@@ -19,6 +20,7 @@ struct TaskFormValues {
     let mode: TaskRecurrenceMode
     let weekdays: Set<Int>
     let dates: [String]
+    let timesPerWeek: Int
     let deadline: Date
     let requiresPhoto: Bool
 }
@@ -26,14 +28,20 @@ struct TaskFormValues {
 extension NewTask {
     init(from values: TaskFormValues) {
         let isEveryDay = values.weekdays.count == 7
-        let isDates = values.mode == .dates
+        
+        let recurrenceType = switch values.mode {
+        case .fixedDays: isEveryDay ? "daily" : "weekdays"
+        case .timesPerWeek: "weekly"
+        case .dates: "dates"
+        }
         
         self.init(
             name: values.name,
             points: values.points,
-            recurrenceType: isDates ? "dates" : (isEveryDay ? "daily" : "weekdays"),
-            weekdays: isDates || isEveryDay ? nil : values.weekdays.sorted(),
-            dates: isDates ? values.dates : nil,
+            recurrenceType: recurrenceType,
+            weekdays: recurrenceType == "weekdays" ? values.weekdays.sorted() : nil,
+            dates: values.mode == .dates ? values.dates : nil,
+            timesPerWeek: values.mode == .timesPerWeek ? values.timesPerWeek : nil,
             deadlineTime: CalendarDayFormatter.timeString(from: values.deadline),
             photoRequirement: values.requiresPhoto ? "required" : "none"
         )
@@ -54,8 +62,12 @@ final class TaskFormView: UIView {
     private let photoSwitch = UISwitch()
     private let pointsBadge = BadgeView()
     
-    private let modeControl = SegmentedControlView(options: ["Toda semana", "Datas específicas"])
+    private let modeControl = SegmentedControlView(options: ["Dias fixos", "Por semana", "Datas"])
     private let chipsGrid = UIStackView()
+    private let timesSection = UIStackView()
+    private let timesLabel = UILabel()
+    private let minusButton = IconButtonView(icon: "minus", size: 36)
+    private let plusButton = IconButtonView(icon: "plus", size: 36)
     private let datesSection = UIStackView()
     private let datesList = UIStackView()
     private let newDateField = BQDateField(label: "Data", icon: "calendar")
@@ -63,6 +75,7 @@ final class TaskFormView: UIView {
     
     private var chips: [BQChipView] = []
     private var dates: [String] = []
+    private var timesPerWeek = 3
     
     private static let weekdayTitles = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"]
     
@@ -90,9 +103,10 @@ final class TaskFormView: UIView {
         return TaskFormValues(
             name: nameField.text.trimmingCharacters(in: .whitespacesAndNewlines),
             points: Int(pointsField.text) ?? 0,
-            mode: TaskRecurrenceMode(rawValue: modeControl.selectedIndex) ?? .weekly,
+            mode: TaskRecurrenceMode(rawValue: modeControl.selectedIndex) ?? .fixedDays,
             weekdays: Set(selected),
             dates: dates,
+            timesPerWeek: timesPerWeek,
             deadline: deadlineField.date,
             requiresPhoto: photoSwitch.isOn
         )
@@ -112,9 +126,11 @@ final class TaskFormView: UIView {
         selectWeekdays(values.weekdays)
         
         dates = values.dates
+        timesPerWeek = values.timesPerWeek
         modeControl.select(values.mode.rawValue)
         
         updateMode()
+        updateTimes()
         renderDates()
         updatePointsBadge()
     }
@@ -181,7 +197,30 @@ final class TaskFormView: UIView {
         [datesList, newDateField, addDateButton].forEach { datesSection.addArrangedSubview($0) }
         datesSection.isHidden = true
         
-        let recurrenceStack = UIStackView(arrangedSubviews: [recurrenceLabel, modeControl, chipsGrid, datesSection])
+        timesLabel.font = BQFont.display(20, weight: .semibold)
+        timesLabel.textColor = .bqText1
+        timesLabel.textAlignment = .center
+        
+        minusButton.addTarget(self, action: #selector(handleMinus), for: .touchUpInside)
+        plusButton.addTarget(self, action: #selector(handlePlus), for: .touchUpInside)
+        
+        let stepper = UIStackView(arrangedSubviews: [minusButton, timesLabel, plusButton])
+        stepper.axis = .horizontal
+        stepper.spacing = BQSpacing.sp3
+        stepper.alignment = .center
+        
+        let timesCaption = UILabel()
+        timesCaption.text = "Em qualquer dia da semana. Se faltar pouco tempo para a meta, ela vira obrigatória."
+        timesCaption.font = BQFont.body(BQTypeScale.caption)
+        timesCaption.textColor = .bqText3
+        timesCaption.numberOfLines = 0
+        
+        timesSection.axis = .vertical
+        timesSection.spacing = BQSpacing.sp2
+        [stepper, timesCaption].forEach { timesSection.addArrangedSubview($0) }
+        timesSection.isHidden = true
+        
+        let recurrenceStack = UIStackView(arrangedSubviews: [recurrenceLabel, modeControl, chipsGrid, timesSection, datesSection])
         recurrenceStack.axis = .vertical
         recurrenceStack.spacing = BQSpacing.sp2
         recurrenceStack.setCustomSpacing(BQSpacing.sp3, after: modeControl)
@@ -221,14 +260,16 @@ final class TaskFormView: UIView {
         ])
         
         renderDates()
+        updateTimes()
         updatePointsBadge()
     }
     
     private func updateMode() {
-        let isWeekly = modeControl.selectedIndex == TaskRecurrenceMode.weekly.rawValue
+        let mode = TaskRecurrenceMode(rawValue: modeControl.selectedIndex) ?? .fixedDays
         
-        chipsGrid.isHidden = !isWeekly
-        datesSection.isHidden = isWeekly
+        chipsGrid.isHidden = mode != .fixedDays
+        timesSection.isHidden = mode != .timesPerWeek
+        datesSection.isHidden = mode != .dates
     }
     
     private func applyDateRange() {
@@ -259,6 +300,15 @@ final class TaskFormView: UIView {
         }
     }
     
+    private func updateTimes() {
+        timesLabel.text = "\(timesPerWeek)x por semana"
+        
+        minusButton.isEnabled = timesPerWeek > 1
+        minusButton.alpha = minusButton.isEnabled ? 1 : 0.35
+        plusButton.isEnabled = timesPerWeek < 6
+        plusButton.alpha = plusButton.isEnabled ? 1 : 0.35
+    }
+    
     private static func displayText(for day: String) -> String {
         guard let date = CalendarDayFormatter.localDate(from: day) else { return day }
         
@@ -287,6 +337,16 @@ final class TaskFormView: UIView {
     @objc private func handlePointsChanged() {
         updatePointsBadge()
         onPointsChange?()
+    }
+    
+    @objc private func handleMinus() {
+        timesPerWeek = max(1, timesPerWeek - 1)
+        updateTimes()
+    }
+    
+    @objc private func handlePlus() {
+        timesPerWeek = min(6, timesPerWeek + 1)
+        updateTimes()
     }
 }
 

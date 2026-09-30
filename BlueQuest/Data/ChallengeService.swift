@@ -27,7 +27,10 @@ final class ChallengeService {
                 state: OccurrenceState(apiValue: dto.state) ?? .available,
                 deadline: dto.deadlineAt,
                 occurrenceDate: dto.occurrenceDate,
-                hasPhoto: dto.photoRequirement != "none"
+                hasPhoto: dto.photoRequirement != "none",
+                weekly: dto.weekly.map {
+                    WeeklyProgress(target: $0.target, done: $0.done, daysLeft: $0.daysLeft, isMandatory: $0.isMandatory)
+                }
             )
         }
     }
@@ -95,10 +98,12 @@ final class ChallengeService {
                     recurrenceType: task.recurrenceType,
                     weekdays: task.recurrenceWeekdays ?? [],
                     dates: task.recurrenceDates ?? [],
+                    timesPerWeek: task.recurrenceTimesPerWeek,
                     recurrenceText: Self.recurrenceText(
                         type: task.recurrenceType,
                         weekdays: task.recurrenceWeekdays,
-                        dates: task.recurrenceDates
+                        dates: task.recurrenceDates,
+                        timesPerWeek: task.recurrenceTimesPerWeek
                     )
                 )
             }
@@ -214,10 +219,12 @@ final class ChallengeService {
         )
     }
     
-    private static func recurrenceText(type: String, weekdays: [Int]?, dates: [String]?) -> String {
+    private static func recurrenceText(type: String, weekdays: [Int]?, dates: [String]?, timesPerWeek: Int?) -> String {
         switch type {
         case "daily":
             return "todos os dias"
+        case "weekly":
+            return "\(timesPerWeek ?? 0)x por semana"
         case "dates":
             let dates = dates ?? []
             
@@ -239,6 +246,7 @@ final class ChallengeService {
             recurrenceType: task.recurrenceType,
             recurrenceWeekdays: task.weekdays,
             recurrenceDates: task.dates,
+            recurrenceTimesPerWeek: task.timesPerWeek,
             deadlineTime: task.deadlineTime,
             photoRequirement: task.photoRequirement
         )
@@ -260,6 +268,14 @@ private struct OccurrenceDTO: Decodable {
     let occurrenceDate: String
     let state: String
     let pointsAwarded: Int?
+    let weekly: WeeklyProgressDTO?
+}
+
+private struct WeeklyProgressDTO: Decodable {
+    let target: Int
+    let done: Int
+    let daysLeft: Int
+    let isMandatory: Bool
 }
 
 private struct ChallengesResponseDTO: Decodable {
@@ -331,6 +347,7 @@ private struct CreateTaskRequest: Encodable {
     let recurrenceType: String
     let recurrenceWeekdays: [Int]?
     let recurrenceDates: [String]?
+    let recurrenceTimesPerWeek: Int?
     let deadlineTime: String
     let photoRequirement: String
 }
@@ -344,6 +361,7 @@ private struct DetailTaskDTO: Decodable {
     let recurrenceType: String
     let recurrenceWeekdays: [Int]?
     let recurrenceDates: [String]?
+    let recurrenceTimesPerWeek: Int?
 }
 
 private struct CreateChallengeRequest: Encodable {
@@ -429,6 +447,20 @@ struct TodayOccurrence {
     let deadline: Date
     let occurrenceDate: String
     let hasPhoto: Bool
+    let weekly: WeeklyProgress?
+    
+    var isOptional: Bool {
+        state == .available && weekly?.isMandatory == false
+    }
+}
+
+struct WeeklyProgress: Equatable {
+    let target: Int
+    let done: Int
+    let daysLeft: Int
+    let isMandatory: Bool
+    
+    var remaining: Int { max(0, target - done) }
 }
 
 struct ChallengeSummary {
@@ -459,6 +491,7 @@ struct NewTask {
     let recurrenceType: String
     let weekdays: [Int]?
     let dates: [String]?
+    let timesPerWeek: Int?
     let deadlineTime: String
     let photoRequirement: String
 }
@@ -483,6 +516,7 @@ struct ChallengeDetailTask {
     let recurrenceType: String
     let weekdays: [Int]
     let dates: [String]
+    let timesPerWeek: Int?
     let recurrenceText: String
 }
 

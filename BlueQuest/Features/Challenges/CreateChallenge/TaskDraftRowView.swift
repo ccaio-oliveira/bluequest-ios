@@ -10,17 +10,20 @@ import UIKit
 
 extension TaskFormValues {
     var recurrenceSummary: String {
-        if mode == .dates {
+        switch mode {
+        case .dates:
             return dates.count == 1 ? "1 data" : "\(dates.count) datas"
+        case .timesPerWeek:
+            return "\(timesPerWeek)x por semana"
+        case .fixedDays:
+            if weekdays.count == 7 {
+                return "Todos os dias"
+            }
+            
+            let names = [1: "dom", 2: "seg", 3: "ter", 4: "qua", 5: "qui", 6: "sex", 7: "sab"]
+            
+            return weekdays.sorted().compactMap { names[$0] }.joined(separator: "/")
         }
-        
-        if weekdays.count == 7 {
-            return "Todos os dias"
-        }
-        
-        let names = [1: "dom", 2: "seg", 3: "ter", 4: "qua", 5: "qui", 6: "sex", 7: "sab"]
-        
-        return weekdays.sorted().compactMap { names[$0] }.joined(separator: "/")
     }
 }
 

@@ -123,7 +123,8 @@ final class HomeViewModel {
                     points: occurrence.points,
                     state: occurrence.state,
                     deadlineText: timeFormatter.string(from: occurrence.deadline),
-                    hasPhoto: occurrence.hasPhoto
+                    hasPhoto: occurrence.hasPhoto,
+                    weekly: occurrence.weekly
                 )
             )
         }
@@ -140,7 +141,7 @@ final class HomeViewModel {
             dateText: "Hoje · \(weekday)",
             points: occurrences.compactMap(\.pointsAwarded).reduce(0, +),
             completedCount: occurrences.filter { $0.state == .completed }.count,
-            doableCount: occurrences.filter { $0.state != .future }.count
+            doableCount: occurrences.filter { $0.state != .future && !$0.isOptional }.count
         )
     }
     

@@ -45,9 +45,10 @@ enum APIError: LocalizedError {
         case "start_locked": "O início não pode mudar depois que o desafio começou."
         case "start_in_past": "O início não pode ser uma data passada."
         case "end_in_past": "O término não pode ser uma data passada."
-        case "cannot_remove_creator": "O cirador não pode ser removido do desafio."
+        case "cannot_remove_creator": "O criador não pode ser removido do desafio."
         case "challenge_not_started": "O desafio ainda não começou."
         case "photo_required": "Esta tarefa exige uma foto."
+        case "weekly_target_reached": "Você já bateu a meta desta tarefa nesta semana."
         default: "Não foi possível concluir a ação."
         }
     }

@@ -139,7 +139,7 @@ final class TaskFormSheetViewController: UIViewController {
             return nil
         }
         
-        if values.weekdays.isEmpty {
+        if values.mode == .fixedDays && values.weekdays.isEmpty {
             return "Escolha pelo menos um dia."
         }
         

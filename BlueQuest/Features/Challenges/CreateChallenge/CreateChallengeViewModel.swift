@@ -85,7 +85,7 @@ final class CreateChallengeViewModel {
                 if task.dates.isEmpty {
                     return "Adicione pelo menos uma data para a tarefa \(position)."
                 }
-            } else if task.weekdays.isEmpty {
+            } else if task.mode == .fixedDays && task.weekdays.isEmpty {
                 return "Escolha pelo menos um dia para a tarefa \(position)."
             }
         }

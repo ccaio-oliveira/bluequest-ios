@@ -257,12 +257,19 @@ final class ChallengeSettingsViewModel {
     }
     
     private static func makeFormValues(for task: ChallengeDetailTask) -> TaskFormValues {
-        TaskFormValues(
+        let mode: TaskRecurrenceMode = switch task.recurrenceType {
+        case "dates": .dates
+        case "weekly": .timesPerWeek
+        default: .fixedDays
+        }
+        
+        return TaskFormValues(
             name: task.name,
             points: task.points,
-            mode: task.recurrenceType == "dates" ? .dates : .weekly,
+            mode: mode,
             weekdays: task.recurrenceType == "daily" ? Set(1...7) : Set(task.weekdays),
             dates: task.dates,
+            timesPerWeek: task.timesPerWeek ?? 3,
             deadline: CalendarDayFormatter.localTime(from: task.deadlineTime) ?? Date(),
             requiresPhoto: task.hasPhoto
         )

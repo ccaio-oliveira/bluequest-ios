@@ -15,6 +15,7 @@ final class TaskCardView: UIView {
     private let titleLabel = UILabel()
     private let metaLabel = UILabel()
     private let photoIcon = UIImageView()
+    private let alertIcon = UIImageView()
     private let badge = BadgeView()
     
     override init(frame: CGRect) {
@@ -28,11 +29,13 @@ final class TaskCardView: UIView {
     
     func configure(with row: TaskCardModel) {
         let state = row.state
+        let isMandatory = row.weekly?.isMandatory == true
         
         titleLabel.attributedText = NSAttributedString(string: row.taskName, attributes: state == .completed ? [.strikethroughStyle: NSUnderlineStyle.single.rawValue, .strikethroughColor: UIColor.bqText3] : [:])
         
         metaLabel.text = metaText(for: row)
-        metaLabel.textColor = state == .expired ? .bqRed : .bqText3
+        metaLabel.textColor = state == .expired ? .bqRed : (isMandatory ? .bqAmber : .bqText3)
+        alertIcon.isHidden = !isMandatory
         photoIcon.isHidden = !row.hasPhoto
         photoIcon.tintColor = metaLabel.textColor
         
@@ -44,16 +47,38 @@ final class TaskCardView: UIView {
         
         badge.configure(text: "+\(row.points) pts", tone: state == .completed ? .points : .neutral, systemIcon: "bolt.fill")
         
-        layer.borderColor = (state == .available ? UIColor.bqStroke2 : UIColor.bqStroke1).cgColor
+        layer.borderColor = (isMandatory ? UIColor.bqAmber : state == .available ? UIColor.bqStroke2 : UIColor.bqStroke1).cgColor
         alpha = (state == .available) ? 1.0 : 0.6
     }
     
     private func metaText(for row: TaskCardModel) -> String {
+        if let weekly = row.weekly {
+            return weeklyText(state: row.state, weekly: weekly, deadlineText: row.deadlineText)
+        }
+        
         switch row.state {
-        case .expired: "Expirou às \(row.deadlineText)"
-        case .completed: "Concluída"
-        case .future: "Disponível em breve"
-        case .available: "Disponível até \(row.deadlineText)"
+        case .expired: return "Expirou às \(row.deadlineText)"
+        case .completed: return "Concluída"
+        case .future: return "Disponível em breve"
+        case .available: return "Disponível até \(row.deadlineText)"
+        }
+    }
+    
+    private func weeklyText(state: OccurrenceState, weekly: WeeklyProgress, deadlineText: String) -> String {
+        let progress = "\(weekly.done) de \(weekly.target) na semana"
+        
+        switch state {
+        case .completed:
+            return "Concluída · \(progress)"
+        case .expired:
+            return "Meta da semana não batida"
+        case .future:
+            return progress
+        case .available:
+            guard weekly.isMandatory else { return "\(progress) · até \(deadlineText)" }
+            
+            let days = weekly.daysLeft == 1 ? "1 dia" : "\(weekly.daysLeft) dias"
+            return "Obrigatória · faltam \(weekly.remaining) em \(days)"
         }
     }
     
@@ -106,7 +131,14 @@ final class TaskCardView: UIView {
         photoIcon.contentMode = .scaleAspectFit
         photoIcon.setContentHuggingPriority(.required, for: .horizontal)
         
-        let metaRow = UIStackView(arrangedSubviews: [metaLabel, photoIcon, UIView()])
+        alertIcon.image = UIImage(systemName: "exclamationmark.triangle.fill")
+        alertIcon.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: 12, weight: .semibold)
+        alertIcon.tintColor = .bqAmber
+        alertIcon.contentMode = .scaleAspectFit
+        alertIcon.setContentHuggingPriority(.required, for: .horizontal)
+        alertIcon.isHidden = true
+        
+        let metaRow = UIStackView(arrangedSubviews: [alertIcon, metaLabel, photoIcon, UIView()])
         metaRow.axis = .horizontal
         metaRow.spacing = 6
         metaRow.alignment = .center
@@ -144,4 +176,5 @@ struct TaskCardModel: Equatable {
     let state: OccurrenceState
     let deadlineText: String
     let hasPhoto: Bool
+    var weekly: WeeklyProgress? = nil
 }

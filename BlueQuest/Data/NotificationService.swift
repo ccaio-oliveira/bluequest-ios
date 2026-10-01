@@ -46,6 +46,14 @@ final class NotificationService {
     func updatePreferences(_ preferences: NotificationPreferences) async throws {
         try await client.put("notification-preferences", body: preferences)
     }
+    
+    func reminders() async throws -> [Reminder] {
+        let dto: RemindersDTO = try await client.get("reminders", query: ["tz": TimeZone.current.identifier])
+        
+        return dto.reminders.map {
+            Reminder(id: $0.id, title: $0.title, body: $0.body, fireAt: $0.fireAt)
+        }
+    }
 }
 
 struct AppNotification: Equatable {
@@ -67,6 +75,13 @@ struct NotificationPreferences: Codable, Equatable {
     var ended: Bool
 }
 
+struct Reminder {
+    let id: String
+    let title: String
+    let body: String
+    let fireAt: Date
+}
+
 private struct NotificationListDTO: Decodable {
     let items: [NotificationItemDTO]
 }
@@ -83,4 +98,15 @@ private struct NotificationItemDTO: Decodable {
 
 private struct UnreadCountDTO: Decodable {
     let unreadCount: Int
+}
+
+private struct RemindersDTO: Decodable {
+    let reminders: [ReminderDTO]
+}
+
+private struct ReminderDTO: Decodable {
+    let id: String
+    let fireAt: Date
+    let title: String
+    let body: String
 }

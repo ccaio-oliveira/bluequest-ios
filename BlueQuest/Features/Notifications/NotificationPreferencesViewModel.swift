@@ -107,6 +107,8 @@ final class NotificationPreferencesViewModel {
     func refreshPermission() async {
         permissionStatus = await NotificationPermission.status()
         onChange?()
+        
+        await ReminderScheduler.sync()
     }
     
     func requestPermission() async {
@@ -123,6 +125,7 @@ final class NotificationPreferencesViewModel {
         
         do {
             try await NotificationService.shared.updatePreferences(updated)
+            await ReminderScheduler.sync()
         } catch {
             preferences?[keyPath: keyPath] = !value
             onChange?()

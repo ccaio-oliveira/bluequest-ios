@@ -35,6 +35,7 @@ final class Session {
     func end() {
         Keychain.delete(.authToken)
         currentUser = nil
+        ReminderScheduler.clear()
     }
 }
 

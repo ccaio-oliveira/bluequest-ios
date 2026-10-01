@@ -88,6 +88,7 @@ final class HomeViewModel {
             rebuildRows()
             rebuildHeader()
             rebuildChallenges(from: summaries)
+            Task { await ReminderScheduler.sync() }
         } catch {
             isLoading = false
             errorMessage = (error as? APIError)?.errorDescription ?? "Não foi possível carregar seus desafios."

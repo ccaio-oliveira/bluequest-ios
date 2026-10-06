@@ -29,6 +29,10 @@ final class AuthViewModel {
     var onChange: (() -> Void)?
     var onAuthenticated: (() -> Void)?
     
+    init(notice: String? = nil) {
+        errorMessage = notice
+    }
+    
     func setMode(_ mode: Mode) {
         self.mode = mode
         errorMessage = nil

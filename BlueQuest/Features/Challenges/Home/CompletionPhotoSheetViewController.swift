@@ -242,7 +242,7 @@ extension CompletionPhotoSheetViewController: PHPickerViewControllerDelegate {
         provider.loadObject(ofClass: UIImage.self) { [weak self] object, _ in
             guard let image = object as? UIImage else { return }
             
-            Task { @MainActor in
+            Task { @MainActor [weak self] in
                 self?.upload(image)
             }
         }

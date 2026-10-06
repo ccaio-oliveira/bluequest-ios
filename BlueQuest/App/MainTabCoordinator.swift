@@ -14,6 +14,8 @@ final class MainTabCoordinator: Coordinator {
     var onLogout: (() -> Void)?
     
     private var childCoordinators: [Coordinator] = []
+    private var offlineBanner = BannerView()
+    private var connectivityObserver: NSObjectProtocol?
     
     func start() {
         tabBarController.viewControllers = [
@@ -46,6 +48,7 @@ final class MainTabCoordinator: Coordinator {
         ]
         
         tabBarController.selectedIndex = 3
+        setupOfflineBanner()
     }
     
     func selectChallengesTab() {
@@ -105,5 +108,57 @@ final class MainTabCoordinator: Coordinator {
         )
         
         return navigationController
+    }
+    
+    private func setupOfflineBanner() {
+        let container: UIView = tabBarController.view
+        
+        offlineBanner.configure(text: "Sem conexão com a internet", tone: .offline)
+        offlineBanner.alpha = 0
+        offlineBanner.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(offlineBanner)
+        
+        NSLayoutConstraint.activate([
+            offlineBanner.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: BQSpacing.screenPadding),
+            offlineBanner.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -BQSpacing.screenPadding),
+            offlineBanner.bottomAnchor.constraint(equalTo: tabBarController.tabBar.topAnchor, constant: -BQSpacing.sp2)
+        ])
+        
+        connectivityObserver = NotificationCenter.default.addObserver(
+            forName: .connectivityDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.updateOfflineBanner(animated: true)
+            }
+        }
+        
+        updateOfflineBanner(animated: false)
+    }
+    
+    private func updateOfflineBanner(animated: Bool) {
+        let isOffline = !ConnectivityMonitor.shared.isOnline
+        
+        tabBarController.view.layoutIfNeeded()
+        let inset = isOffline ? offlineBanner.bounds.height + BQSpacing.sp2 : 0
+        
+        let changes = {
+            self.offlineBanner.alpha = isOffline ? 1 : 0
+            self.tabBarController.viewControllers?.forEach { $0.additionalSafeAreaInsets.bottom = inset }
+            self.tabBarController.view.layoutIfNeeded()
+        }
+        
+        if animated {
+            UIView.animate(withDuration: 0.25, animations: changes)
+        } else {
+            changes()
+        }
+    }
+    
+    deinit {
+        if let connectivityObserver {
+            NotificationCenter.default.removeObserver(connectivityObserver)
+        }
     }
 }

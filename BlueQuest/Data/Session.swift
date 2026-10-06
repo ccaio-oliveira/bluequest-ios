@@ -37,8 +37,16 @@ final class Session {
         currentUser = nil
         ReminderScheduler.clear()
     }
+    
+    func expire() {
+        guard isAuthenticated else { return }
+        
+        end()
+        NotificationCenter.default.post(name: .sessionDidExpire, object: self)
+    }
 }
 
 extension Notification.Name {
     static let sessionUserDidChange = Notification.Name("BlueQuest.sessionUserDidChange")
+    static let sessionDidExpire = Notification.Name("BlueQuest.sessionDidExpire")
 }

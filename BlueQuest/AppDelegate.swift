@@ -17,6 +17,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         BQAppearance.configureNavigationBar()
         BQAppearance.configureTabBar()
         UNUserNotificationCenter.current().delegate = self
+        ConnectivityMonitor.shared.start()
+        
         return true
     }
 

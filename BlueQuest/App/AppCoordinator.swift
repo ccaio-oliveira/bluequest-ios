@@ -16,6 +16,8 @@ final class AppCoordinator: Coordinator {
     private var pendingInviteCode: String?
     private weak var mainTab: MainTabCoordinator?
     
+    private var sessionObserver: NSObjectProtocol?
+    
     private var topViewController: UIViewController? {
         var top = window.rootViewController
         
@@ -31,6 +33,16 @@ final class AppCoordinator: Coordinator {
     }
     
     func start() {
+        sessionObserver = NotificationCenter.default.addObserver(
+            forName: .sessionDidExpire,
+            object: nil,
+            queue: .main,
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.showAuth(notice: "Sua sessão expirou. Entre novamente.")
+            }
+        }
+        
         if Session.shared.isAuthenticated {
             showMain()
             refreshCurrentUser()
@@ -52,11 +64,11 @@ final class AppCoordinator: Coordinator {
         }
     }
     
-    private func showAuth() {
+    private func showAuth(notice: String? = nil) {
         childCoordinators.removeAll()
         
         let navigationController = BQNavigationController()
-        let coordinator = AuthCoordinator(navigationController: navigationController)
+        let coordinator = AuthCoordinator(navigationController: navigationController, notice: notice)
         coordinator.onAuthenticated = { [weak self] in
             self?.showMain()
         }
@@ -110,16 +122,9 @@ final class AppCoordinator: Coordinator {
     }
     
     private func refreshCurrentUser() {
-        Task { [weak self] in
-            do {
-                let user = try await AuthService.shared.currentUser()
-                Session.shared.update(user: user)
-            } catch APIError.unauthorized {
-                Session.shared.end()
-                self?.showAuth()
-            } catch {
-                // Sem rede ou servidor fora: mantém a sessão e tenta de novo na próxima abertura
-            }
+        Task {
+            guard let user = try? await AuthService.shared.currentUser() else { return }
+            Session.shared.update(user: user)
         }
     }
 }

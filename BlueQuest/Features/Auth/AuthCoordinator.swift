@@ -12,12 +12,15 @@ final class AuthCoordinator: Coordinator {
     let navigationController: UINavigationController
     var onAuthenticated: (() -> Void)?
     
-    init(navigationController: UINavigationController) {
+    private let notice: String?
+    
+    init(navigationController: UINavigationController, notice: String? = nil) {
         self.navigationController = navigationController
+        self.notice = notice
     }
     
     func start() {
-        let viewModel = AuthViewModel()
+        let viewModel = AuthViewModel(notice: notice)
         let viewController = AuthViewController(viewModel: viewModel)
         
         viewController.onAuthenticated = { [weak self] in

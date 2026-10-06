@@ -13,7 +13,11 @@ final class APIClient {
     static let shared = APIClient()
 
     private let baseURL = AppEnvironment.apiBaseURL
-    private let session = URLSession(configuration: .default)
+    private let session: URLSession = {
+        let configuration = URLSessionConfiguration.default
+        configuration.timeoutIntervalForRequest = 15
+        return URLSession(configuration: configuration)
+    }()
 
     private let decoder: JSONDecoder = {
         let decoder = JSONDecoder()
@@ -124,8 +128,10 @@ final class APIClient {
     private func perform(_ request: URLRequest) async throws -> Data {
         var request = request
         request.setValue("application/json", forHTTPHeaderField: "Accept")
+        
+        let token = Keychain.get(.authToken)
 
-        if let token = Keychain.get(.authToken) {
+        if let token {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
 
@@ -146,6 +152,10 @@ final class APIClient {
         case 200..<300:
             return data
         case 401:
+            if token != nil {
+                await Session.shared.expire()
+            }
+            
             throw APIError.unauthorized
         case 422:
             throw unprocessableError(from: data)

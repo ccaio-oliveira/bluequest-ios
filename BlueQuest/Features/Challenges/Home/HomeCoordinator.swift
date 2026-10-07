@@ -13,6 +13,7 @@ final class HomeCoordinator: Coordinator {
     var onLogout: (() -> Void)?
     
     private var childCoordinators: [Coordinator] = []
+    private weak var homeViewController: HomeViewController?
     
     init(navigationController: UINavigationController) {
         self.navigationController = navigationController
@@ -21,6 +22,8 @@ final class HomeCoordinator: Coordinator {
     func start() {
         let viewModel = HomeViewModel()
         let viewController = HomeViewController(viewModel: viewModel)
+        homeViewController = viewController
+        
         navigationController.setViewControllers([viewController], animated: false)
         
         viewController.onSelectChallenge = { [weak self] challengeID, state in
@@ -36,6 +39,11 @@ final class HomeCoordinator: Coordinator {
         }
         
         navigationController.setViewControllers([viewController], animated: false)
+    }
+    
+    func showClosedChallenges() {
+        navigationController.popToRootViewController(animated: false)
+        homeViewController?.showClosedChallenges()
     }
     
     private func showChallenge(id: Int, destination: ChallengeCoordinator.Destination) {

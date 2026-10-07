@@ -14,6 +14,7 @@ final class MainTabCoordinator: Coordinator {
     var onLogout: (() -> Void)?
     
     private var childCoordinators: [Coordinator] = []
+    private weak var homeCoordinator: HomeCoordinator?
     private var offlineBanner = BannerView()
     private var connectivityObserver: NSObjectProtocol?
     
@@ -59,6 +60,7 @@ final class MainTabCoordinator: Coordinator {
         let navigationController = BQNavigationController()
         
         let coordinator = HomeCoordinator(navigationController: navigationController)
+        homeCoordinator = coordinator
         childCoordinators.append(coordinator)
         coordinator.start()
         
@@ -77,6 +79,11 @@ final class MainTabCoordinator: Coordinator {
         let coordinator = ProfileCoordinator(navigationController: navigationController)
         coordinator.onLogout = { [weak self] in
             self?.onLogout?()
+        }
+        
+        coordinator.onShowClosedChallenges = { [weak self] in
+            self?.selectChallengesTab()
+            self?.homeCoordinator?.showClosedChallenges()
         }
         
         childCoordinators.append(coordinator)
@@ -113,7 +120,7 @@ final class MainTabCoordinator: Coordinator {
     private func setupOfflineBanner() {
         let container: UIView = tabBarController.view
         
-        offlineBanner.configure(text: "Sem conexão. SUas conclusões serão enviadas quando ela voltar.", tone: .offline)
+        offlineBanner.configure(text: "Sem conexão. Suas conclusões serão enviadas quando ela voltar.", tone: .offline)
         offlineBanner.alpha = 0
         offlineBanner.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(offlineBanner)

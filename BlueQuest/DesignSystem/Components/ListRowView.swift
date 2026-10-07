@@ -29,6 +29,11 @@ final class ListRowView: UIControl {
         }
     }
     
+    func setSubtitle(_ text: String?) {
+        subtitleLabel.text = text
+        subtitleLabel.isHidden = text == nil
+    }
+    
     private func setupViews(icon: String, title: String, subtitle: String?, showsChevron: Bool, trailingIcon: String, isDestructive: Bool) {
         backgroundColor = .bqBg1
         

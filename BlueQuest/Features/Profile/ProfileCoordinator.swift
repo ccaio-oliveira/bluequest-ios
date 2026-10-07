@@ -11,13 +11,14 @@ import UIKit
 final class ProfileCoordinator: Coordinator {
     let navigationController: UINavigationController
     var onLogout: (() -> Void)?
+    var onShowClosedChallenges: (() -> Void)?
     
     init(navigationController: UINavigationController) {
         self.navigationController = navigationController
     }
     
     func start() {
-        let viewController = ProfileViewController()
+        let viewController = ProfileViewController(viewModel: ProfileViewModel())
         
         viewController.onLogout = { [weak self] in
             self?.onLogout?()
@@ -29,6 +30,10 @@ final class ProfileCoordinator: Coordinator {
         
         viewController.onNotifications = { [weak self] in
             self?.showNotificationPreferences()
+        }
+        
+        viewController.onClosedChallenges = { [weak self] in
+            self?.onShowClosedChallenges?()
         }
         
         navigationController.setViewControllers([viewController], animated: false)

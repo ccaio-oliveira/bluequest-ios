@@ -97,6 +97,17 @@ final class HomeViewController: UIViewController {
         }
     }
     
+    func showClosedChallenges() {
+        viewModel.setFilter(.closed)
+        view.layoutIfNeeded()
+        
+        let inset = scrollView.adjustedContentInset
+        let top = challengesSectionLabel.convert(challengesSectionLabel.bounds, to: scrollView).minY - BQSpacing.sp4
+        let maxOffset = max(scrollView.contentSize.height - scrollView.bounds.height + inset.bottom, -inset.top)
+        
+        scrollView.setContentOffset(CGPoint(x: 0, y: min(max(top, -inset.top), maxOffset)), animated: true)
+    }
+    
     private func setupLayout() {
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.showsVerticalScrollIndicator = false

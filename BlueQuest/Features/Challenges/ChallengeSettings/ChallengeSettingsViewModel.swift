@@ -125,13 +125,15 @@ final class ChallengeSettingsViewModel {
         taskValues[id]
     }
     
-    func saveTask(_ values: TaskFormValues, taskID: Int?) async {
+    func saveTask(_ values: TaskFormValues, taskID: Int?) async -> String? {
         let task = NewTask(from: values)
+        var failure: String?
         
         await runOperation(
             .task,
             successMessage: taskID == nil ? "Tarefa adicionada" : "Tarefa atualizada",
-            failureMessage: "Não foi possível salvar a tarefa."
+            failureMessage: "Não foi possível salvar a tarefa.",
+            onFailure: { failure = $0 }
         ) {
             if let taskID {
                 try await ChallengeService.shared.updateTask(id: taskID, task)
@@ -139,6 +141,8 @@ final class ChallengeSettingsViewModel {
                 try await ChallengeService.shared.createTask(challengeID: challengeID, task)
             }
         }
+        
+        return failure
     }
     
     func deleteTask(id: Int) async {
@@ -214,6 +218,7 @@ final class ChallengeSettingsViewModel {
         successMessage: String?,
         failureMessage: String,
         reloadsOnSuccess: Bool = true,
+        onFailure: ((String) -> Void)? = nil,
         _ operation: () async throws -> Void
     ) async -> Bool {
         guard !isSaving else { return false }
@@ -239,7 +244,13 @@ final class ChallengeSettingsViewModel {
             
             return true
         } catch {
-            onOperationError?((error as? APIError)?.errorDescription ?? failureMessage)
+            let message = (error as? APIError)?.errorDescription ?? failureMessage
+            if let onFailure {
+                onFailure(message)
+            } else {
+                onOperationError?(message)
+            }
+            
             return false
         }
     }

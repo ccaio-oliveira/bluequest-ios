@@ -9,7 +9,7 @@ import Foundation
 import UIKit
 
 final class TaskFormSheetViewController: UIViewController {
-    var onSave: ((TaskFormValues) -> Void)?
+    var onSave: ((TaskFormValues) async -> String?)?
     var onDelete: (() -> Void)?
     
     private let formView = TaskFormView()
@@ -161,8 +161,30 @@ final class TaskFormSheetViewController: UIViewController {
             return
         }
         
-        onSave?(values)
-        dismiss(animated: true)
+        guard let onSave else {
+            dismiss(animated: true)
+            return
+        }
+        
+        errorLabel.isHidden = true
+        saveButton.setLoading(true)
+        deleteButton.isEnabled = false
+        isModalInPresentation = true
+        
+        Task {
+            let failure = await onSave(values)
+            
+            saveButton.setLoading(false)
+            deleteButton.isEnabled = true
+            isModalInPresentation = false
+            
+            if let failure {
+                errorLabel.text = failure
+                errorLabel.isHidden = false
+            } else {
+                dismiss(animated: true)
+            }
+        }
     }
     
     @objc private func handleDelete() {

@@ -19,7 +19,7 @@ final class HomeViewController: UIViewController {
     private let contentStack = UIStackView()
     private let tasksStack = UIStackView()
     private let headerView = HomeHeaderView()
-    private let challengesSectionLabel = UILabel()
+    private let challengesSectionLabel = OverlineLabel("Seus desafios")
     private let challengesStack = UIStackView()
     private let createButton = BQButton(title: "Criar desafio", icon: "plus", variant: .primary, size: .lg)
     private let pointsPill = PointsPillView(size: .lg)
@@ -124,13 +124,6 @@ final class HomeViewController: UIViewController {
         contentStack.spacing = BQSpacing.sp5
         contentStack.translatesAutoresizingMaskIntoConstraints = false
         scrollView.addSubview(contentStack)
-        
-        challengesSectionLabel.font = BQFont.body(BQTypeScale.micro, weight: .semibold)
-        challengesSectionLabel.textColor = .bqText3
-        challengesSectionLabel.attributedText = NSAttributedString(
-            string: "SEUS DESAFIOS",
-            attributes: [.kern: BQTypeScale.micro * 0.08]
-        )
         
         challengesStack.axis = .vertical
         challengesStack.spacing = BQSpacing.sp2

@@ -7,15 +7,6 @@
 
 import Foundation
 
-struct Challenge: Identifiable, Codable {
-    let id: Int
-    var name: String
-    var description: String
-    var startDate: Date
-    var endDate: Date
-    var creatorUserID: Int
-}
-
 enum ChallengeState: Equatable {
     case future
     case inProgress

@@ -134,7 +134,7 @@ final class BQDateField: UIView {
         toolbar.tintColor = .bqBlueBright
         toolbar.items = [
             UIBarButtonItem(systemItem: .flexibleSpace),
-            UIBarButtonItem(title: "OK", style: .done, target: self, action: #selector(handleDone))
+            UIBarButtonItem(title: "OK", style: .prominent, target: self, action: #selector(handleDone))
         ]
         toolbar.sizeToFit()
         return toolbar

@@ -166,6 +166,8 @@ final class APIClient {
             }
             
             throw APIError.unauthorized
+        case 403:
+            throw APIError.forbidden
         case 422:
             throw unprocessableError(from: data)
         default:

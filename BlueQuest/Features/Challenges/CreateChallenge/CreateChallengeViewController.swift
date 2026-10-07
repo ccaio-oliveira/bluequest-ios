@@ -42,7 +42,6 @@ final class CreateChallengeViewController: UIViewController {
         view.backgroundColor = .bqBg0
         
         setupLayout()
-        observerKeyboard()
         setupDismissKeyboardGesture()
         
         viewModel.onChange = { [weak self] in
@@ -107,11 +106,13 @@ final class CreateChallengeViewController: UIViewController {
         let content = scrollView.contentLayoutGuide
         let frame = scrollView.frameLayoutGuide
         
+        view.keyboardLayoutGuide.usesBottomSafeArea = false
+        
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: view.keyboardLayoutGuide.topAnchor),
             
             contentStack.topAnchor.constraint(equalTo: content.topAnchor, constant: BQSpacing.sp2),
             contentStack.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -BQSpacing.sp8),
@@ -149,7 +150,7 @@ final class CreateChallengeViewController: UIViewController {
         let sheet = TaskFormSheetViewController(editing: existing, dateRange: range)
         
         sheet.onSave = { [weak self] values in
-            guard let self else { return }
+            guard let self else { return nil }
             
             if let editingIndex {
                 self.taskDrafts[editingIndex] = values
@@ -158,16 +159,10 @@ final class CreateChallengeViewController: UIViewController {
             }
             
             self.renderTasks()
+            return nil
         }
         
         present(sheet, animated: true)
-    }
-    
-    private func addTaskForm() {
-        let form = TaskFormView()
-        
-        form.selectWeekdays(Set(1...7))
-        tasksStack.addArrangedSubview(form)
     }
     
     private func render() {
@@ -178,35 +173,10 @@ final class CreateChallengeViewController: UIViewController {
         addTaskButton.isEnabled = !viewModel.isSaving
     }
     
-    private func observerKeyboard() {
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(keyboardWillChange(_:)),
-            name: UIResponder.keyboardWillChangeFrameNotification,
-            object: nil
-        )
-            
-        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide), name: UIResponder.keyboardWillHideNotification, object: nil)
-    }
-    
     private func setupDismissKeyboardGesture() {
         let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
         tap.cancelsTouchesInView = false
         view.addGestureRecognizer(tap)
-    }
-    
-    @objc private func keyboardWillChange(_ notification: Notification) {
-        guard let frame = notification.userInfo? [UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
-        
-        let overlap = view.bounds.maxY - view.convert(frame, from: nil).minY
-        
-        scrollView.contentInset.bottom = max(overlap, 0)
-        scrollView.verticalScrollIndicatorInsets.bottom = max(overlap, 0)
-    }
-    
-    @objc private func keyboardWillHide() {
-        scrollView.contentInset.bottom = 0
-        scrollView.verticalScrollIndicatorInsets.bottom = 0
     }
     
     @objc private func dismissKeyboard() {

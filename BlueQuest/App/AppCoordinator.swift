@@ -112,9 +112,9 @@ final class AppCoordinator: Coordinator {
             presenter?.dismiss(animated: true)
         }
         
-        viewController.onOpenChallenge = { [weak self, weak presenter] _ in
+        viewController.onOpenChallenge = { [weak self, weak presenter] challengeId in
             presenter?.dismiss(animated: true) {
-                self?.mainTab?.selectChallengesTab()
+                self?.mainTab?.openChallenge(id: challengeId)
             }
         }
         

@@ -457,7 +457,7 @@ final class ChallengeSettingsViewController: UIViewController {
         )
         
         sheet.onSave = { [weak self] values in
-            Task { await self?.viewModel.saveTask(values, taskID: taskID) }
+            await self?.viewModel.saveTask(values, taskID: taskID)
         }
         
         sheet.onDelete = { [weak self] in

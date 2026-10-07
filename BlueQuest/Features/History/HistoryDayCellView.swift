@@ -35,10 +35,10 @@ final class HistoryDayCellView: UIControl {
         photoView.isHidden = !cell.hasPhoto
         
         switch cell.state {
-        case .allDone, .partial where cell.points > 0:
+        case .allDone, .partial:
             detailLabel.text = "+\(cell.points)"
             detailLabel.textColor = textColor(for: cell.state)
-            detailLabel.isHidden = false
+            detailLabel.isHidden = cell.points == 0
         case .missed:
             detailLabel.text = "x"
             detailLabel.textColor = .bqRed

@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import OSLog
 
 struct PendingCompletion: Codable, Equatable {
     let id: UUID
@@ -29,6 +30,7 @@ extension Notification.Name {
 @MainActor
 final class CompletionQueue {
     static let shared = CompletionQueue()
+    private static let logger = Logger(subsystem: "br.com.ctech.BlueQuest", category: "completion-queue")
     
     private(set) var items: [PendingCompletion] = []
     
@@ -102,7 +104,8 @@ final class CompletionQueue {
             do {
                 try await send(item)
                 finish(item, event: .sent(item))
-            } catch APIError.network, APIError.server, APIError.unauthorized {
+            } catch let error as APIError where Self.pausesQueue(error) {
+                Self.logger.notice("Fila pausada em \(item.taskName, privacy: .public): \(String(describing: error), privacy: .public)")
                 return
             } catch APIError.domainRule(reason: "occurrence_not_available", state: "completed") {
                 finish(item, event: .sent(item))
@@ -169,5 +172,12 @@ final class CompletionQueue {
             object: self,
             userInfo: event.map { ["event": $0] }
         )
+    }
+    
+    private static func pausesQueue(_ error: APIError) -> Bool {
+        switch error {
+        case .network, .server, . unauthorized: true
+        default: false
+        }
     }
 }

@@ -46,6 +46,11 @@ final class HomeCoordinator: Coordinator {
         homeViewController?.showClosedChallenges()
     }
     
+    func openChallenge(id: Int) {
+        navigationController.popToRootViewController(animated: false)
+        showChallenge(id: id, destination: .detail)
+    }
+    
     private func showChallenge(id: Int, destination: ChallengeCoordinator.Destination) {
         let coordinator = ChallengeCoordinator(
             navigationController: navigationController,

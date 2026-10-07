@@ -6,17 +6,27 @@
 //
 
 import Foundation
+import OSLog
 import UserNotifications
 
 enum ReminderScheduler {
     private static let limit = 60
+    private static let logger = Logger(subsystem: "br.com.ctech.BlueQuest", category: "reminders")
     
     static func sync() async {
         let center = UNUserNotificationCenter.current()
         let status = await center.notificationSettings().authorizationStatus
         
         guard status == .authorized || status == .provisional else { return }
-        guard let reminders = try? await NotificationService.shared.reminders() else { return }
+        
+        let reminders: [Reminder]
+        
+        do {
+            reminders = try await NotificationService.shared.reminders()
+        } catch {
+            logger.error("Não foi possível buscar o plano de lembretes: \(error.localizedDescription, privacy: .public)")
+            return
+        }
         
         center.removeAllPendingNotificationRequests()
         

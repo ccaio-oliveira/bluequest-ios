@@ -11,7 +11,7 @@ import UIKit
 final class HomeHeaderView: UIView {
     var onNotificationsTap: (() -> Void)?
     
-    private let overlineLabel = UILabel()
+    private let overlineLabel = OverlineLabel("")
     private let pointsLabel = UILabel()
     private let notificationsButton = UIButton(type: .system)
     private let ring = ProgressRingView(size: 60)
@@ -27,7 +27,7 @@ final class HomeHeaderView: UIView {
     }
     
     func configure(with header: HomeHeader) {
-        overlineLabel.attributedText = NSAttributedString(string: header.dateText.uppercased(), attributes: [.kern: BQTypeScale.micro * 0.08])
+        overlineLabel.setText(header.dateText)
         
         let points = NSMutableAttributedString(
             string: "\(header.points)",
@@ -56,9 +56,6 @@ final class HomeHeaderView: UIView {
     }
     
     private func setupViews() {
-        overlineLabel.font = BQFont.body(BQTypeScale.micro, weight: .semibold)
-        overlineLabel.textColor = .bqText3
-        
         let textStack = UIStackView(arrangedSubviews: [overlineLabel, pointsLabel])
         textStack.axis = .vertical
         textStack.spacing = 2

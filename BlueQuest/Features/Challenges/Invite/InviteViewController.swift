@@ -47,13 +47,7 @@ final class InviteViewController: UIViewController {
     }
     
     private func setupLayout() {
-        let overline = UILabel()
-        overline.attributedText = NSAttributedString(
-            string: "CONVITE RECEBIDO",
-            attributes: [.kern: BQTypeScale.micro * 0.08]
-        )
-        overline.font = BQFont.body(BQTypeScale.micro, weight: .semibold)
-        overline.textColor = .bqText3
+        let overline = OverlineLabel("Convite recebido")
         
         let closeButton = IconButtonView(icon: "xmark")
         closeButton.addTarget(self, action: #selector(handleClose), for: .touchUpInside)

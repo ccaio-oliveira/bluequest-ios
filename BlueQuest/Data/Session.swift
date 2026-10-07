@@ -36,6 +36,7 @@ final class Session {
         Keychain.delete(.authToken)
         currentUser = nil
         ReminderScheduler.clear()
+        CompletionQueue.shared.clear()
     }
     
     func expire() {

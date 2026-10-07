@@ -49,6 +49,20 @@ final class TaskCardView: UIView {
         
         layer.borderColor = (isMandatory ? UIColor.bqAmber : state == .available ? UIColor.bqStroke2 : UIColor.bqStroke1).cgColor
         alpha = (state == .available) ? 1.0 : 0.6
+        
+        guard row.isSending else { return }
+        
+        metaLabel.text = "Aguardando envio"
+        metaLabel.textColor = .bqBlueBright
+        alertIcon.isHidden = true
+        photoIcon.isHidden = true
+        actionButton.setImage(UIImage(systemName: "arrow.up"), for: .normal)
+        actionButton.tintColor = .bqBlueBright
+        actionButton.backgroundColor = .bqBlueDim
+        actionButton.layer.borderColor = UIColor.clear.cgColor
+        actionButton.isUserInteractionEnabled = false
+        layer.borderColor = UIColor.bqStroke2.cgColor
+        alpha = 1
     }
     
     private func metaText(for row: TaskCardModel) -> String {
@@ -177,4 +191,5 @@ struct TaskCardModel: Equatable {
     let deadlineText: String
     let hasPhoto: Bool
     var weekly: WeeklyProgress? = nil
+    var isSending = false
 }

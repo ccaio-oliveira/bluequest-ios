@@ -113,7 +113,7 @@ final class MainTabCoordinator: Coordinator {
     private func setupOfflineBanner() {
         let container: UIView = tabBarController.view
         
-        offlineBanner.configure(text: "Sem conexão com a internet", tone: .offline)
+        offlineBanner.configure(text: "Sem conexão. SUas conclusões serão enviadas quando ela voltar.", tone: .offline)
         offlineBanner.alpha = 0
         offlineBanner.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(offlineBanner)

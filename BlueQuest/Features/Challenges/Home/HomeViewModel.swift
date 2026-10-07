@@ -22,6 +22,7 @@ final class HomeViewModel {
     
     private var occurrences: [TodayOccurrence] = []
     private var unreadNotifications = 0
+    private var queueObserver: NSObjectProtocol?
     
     private lazy var timeFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -55,6 +56,26 @@ final class HomeViewModel {
         if challenges.isEmpty { return .noChallenges }
         if rows.isEmpty { return .noTasksToday }
         return .none
+    }
+    
+    init() {
+        queueObserver = NotificationCenter.default.addObserver(
+            forName: .completionQueueDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            let event = notification.userInfo?["event"] as? CompletionQueueEvent
+            
+            MainActor.assumeIsolated {
+                self?.handleQueueChange(event)
+            }
+        }
+    }
+    
+    deinit {
+        if let queueObserver {
+            NotificationCenter.default.removeObserver(queueObserver)
+        }
     }
     
     func logout() async {
@@ -96,20 +117,19 @@ final class HomeViewModel {
         }
     }
     
-    func completeTask(taskID: Int, photoPath: String? = nil) async {
+    func completeTask(taskID: Int, photo: Data? = nil) {
         guard let occurrence = occurrences.first(where: { $0.taskID == taskID }), occurrence.state == .available else { return }
         
         do {
-            try await ChallengeService.shared.completeTask(taskID: taskID, occurrenceDate: occurrence.occurrenceDate, photoPath: photoPath)
-            
-            onPointsAwarded?(occurrence.points)
-            await load(showingLoader: false)
-        } catch {
-            onActionError?(
-                (error as? APIError)?.errorDescription ?? "Não foi possível concluir a tarefa."
+            try CompletionQueue.shared.submit(
+                taskID: taskID,
+                taskName: occurrence.name,
+                points: occurrence.points,
+                occurrenceDate: occurrence.occurrenceDate,
+                photo: photo
             )
-            
-            await load(showingLoader: false)
+        } catch {
+            onActionError?("Não foi possível guardar a foto no aparelho.")
         }
     }
     
@@ -128,7 +148,8 @@ final class HomeViewModel {
                     state: occurrence.state,
                     deadlineText: timeFormatter.string(from: occurrence.deadline),
                     hasPhoto: occurrence.hasPhoto,
-                    weekly: occurrence.weekly
+                    weekly: occurrence.weekly,
+                    isSending: CompletionQueue.shared.isPending(taskID: occurrence.taskID, occurrenceDate: occurrence.occurrenceDate)
                 )
             )
         }
@@ -171,6 +192,20 @@ final class HomeViewModel {
                 state: summary.state,
                 isHero: isHero
             )
+        }
+    }
+    
+    private func handleQueueChange(_ event: CompletionQueueEvent?) {
+        switch event {
+        case .sent(let item):
+            onPointsAwarded?(item.points)
+            Task { await load(showingLoader: false) }
+        case .rejected(let item, let message):
+            onActionError?("\(item.taskName): \(message)")
+            Task { await load(showingLoader: false) }
+        case nil:
+            rebuildRows()
+            onChange?()
         }
     }
 }

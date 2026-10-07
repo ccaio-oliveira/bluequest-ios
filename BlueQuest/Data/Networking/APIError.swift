@@ -14,7 +14,6 @@ enum APIError: LocalizedError {
     case server(status: Int)
     case network(Error)
     case decoding(Error)
-    case invalidImage
 
     var errorDescription: String? {
         switch self {
@@ -30,8 +29,6 @@ enum APIError: LocalizedError {
             "Sem conexão. Verifique sua internet."
         case .decoding:
             "Recebemos uma resposta inesperada do servidor."
-        case .invalidImage:
-            "Não foi possível preparar a foto."
         }
     }
 

@@ -53,6 +53,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard Session.shared.isAuthenticated else { return }
         
         Task { await ReminderScheduler.sync() }
+        Task { await CompletionQueue.shared.flush() }
     }
 
     func sceneWillResignActive(_ scene: UIScene) {

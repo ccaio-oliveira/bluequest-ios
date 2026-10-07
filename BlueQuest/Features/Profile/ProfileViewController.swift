@@ -13,6 +13,7 @@ final class ProfileViewController: UIViewController {
     var onHistory: (() -> Void)?
     var onNotifications: (() -> Void)?
     var onClosedChallenges: (() -> Void)?
+    var onAccount: (() -> Void)?
     
     private let viewModel: ProfileViewModel
     
@@ -51,6 +52,9 @@ final class ProfileViewController: UIViewController {
         statsRow.spacing = BQSpacing.sp2
         statsRow.distribution = .fillEqually
         
+        let accountRow = ListRowView(icon: "person", title: "Conta", subtitle: "Nome, e-mail e senha")
+        accountRow.addTarget(self, action: #selector(handleAccount), for: .touchUpInside)
+        
         let notificationsRow = ListRowView(
             icon: "bell",
             title: "Notificações",
@@ -75,7 +79,7 @@ final class ProfileViewController: UIViewController {
         closedRow.addTarget(self, action: #selector(handleClosedChallenges), for: .touchUpInside)
         
         let mainGroup = ListGroupView()
-        mainGroup.setRows([notificationsRow, permissionsRow, historyRow, closedRow])
+        mainGroup.setRows([accountRow, notificationsRow, permissionsRow, historyRow, closedRow])
         
         let logoutRow = ListRowView(
             icon: "rectangle.portrait.and.arrow.right",
@@ -186,5 +190,9 @@ final class ProfileViewController: UIViewController {
     
     @objc private func handleClosedChallenges() {
         onClosedChallenges?()
+    }
+    
+    @objc private func handleAccount() {
+        onAccount?()
     }
 }

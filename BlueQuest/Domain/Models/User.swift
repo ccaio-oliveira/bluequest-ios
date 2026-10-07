@@ -12,4 +12,5 @@ struct User: Identifiable, Codable {
     var name: String
     var email: String
     var avatarURL: URL?
+    var hasPassword: Bool
 }

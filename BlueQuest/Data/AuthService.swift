@@ -7,14 +7,15 @@
 
 import Foundation
 
-private struct UserDTO: Decodable {
+struct UserDTO: Decodable {
     let id: Int
     let name: String
     let email: String
     let avatarUrl: String?
+    let hasPassword: Bool
     
     func toDomain() -> User {
-        User(id: id, name: name, email: email, avatarURL: avatarUrl.flatMap(URL.init(string:)))
+        User(id: id, name: name, email: email, avatarURL: avatarUrl.flatMap(URL.init(string:)), hasPassword: hasPassword)
     }
 }
 

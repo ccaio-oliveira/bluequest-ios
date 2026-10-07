@@ -46,6 +46,8 @@ enum APIError: LocalizedError {
         case "challenge_not_started": "O desafio ainda não começou."
         case "photo_required": "Esta tarefa exige uma foto."
         case "weekly_target_reached": "Você já bateu a meta desta tarefa nesta semana."
+        case "current_password_invalid": "A senha atual não confere."
+        case "password_required_for_email": "Crie uma senha antes de trocar o e-mail."
         default: "Não foi possível concluir a ação."
         }
     }

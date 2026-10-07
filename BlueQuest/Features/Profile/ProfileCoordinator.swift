@@ -36,6 +36,10 @@ final class ProfileCoordinator: Coordinator {
             self?.onShowClosedChallenges?()
         }
         
+        viewController.onAccount = { [weak self] in
+            self?.showAccount()
+        }
+        
         navigationController.setViewControllers([viewController], animated: false)
     }
     
@@ -51,6 +55,16 @@ final class ProfileCoordinator: Coordinator {
     
     private func showNotificationPreferences() {
         let viewController = NotificationPreferencesViewController(viewModel: NotificationPreferencesViewModel())
+        
+        viewController.onBack = { [weak self] in
+            self?.navigationController.popViewController(animated: true)
+        }
+        
+        navigationController.pushViewController(viewController, animated: true)
+    }
+    
+    private func showAccount() {
+        let viewController = AccountViewController(viewModel: AccountViewModel())
         
         viewController.onBack = { [weak self] in
             self?.navigationController.popViewController(animated: true)

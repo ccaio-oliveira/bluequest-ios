@@ -14,7 +14,7 @@ final class HomeViewController: UIViewController {
     var onOpenNotifications: (() -> Void)?
     
     private let viewModel: HomeViewModel
-
+    
     private let scrollView = UIScrollView()
     private let contentStack = UIStackView()
     private let tasksStack = UIStackView()
@@ -86,6 +86,13 @@ final class HomeViewController: UIViewController {
             await viewModel.load()
             hasLoadedOnce = true
         }
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appWillEnterForeground),
+            name: UIApplication.willEnterForegroundNotification,
+            object: nil
+        )
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -274,7 +281,21 @@ final class HomeViewController: UIViewController {
             return
         }
         
+        let showsChallenge = Set(viewModel.rows.map(\.challengeName)).count > 1
+        var previousChallenge: String?
+        
         for row in viewModel.rows {
+            if showsChallenge && row.challengeName != previousChallenge {
+                let title = OverlineLabel(row.challengeName)
+                
+                if previousChallenge != nil, let last = tasksStack.arrangedSubviews.last {
+                    tasksStack.setCustomSpacing(BQSpacing.sp5, after: last)
+                }
+                
+                tasksStack.addArrangedSubview(title)
+                previousChallenge = row.challengeName
+            }
+            
             let card = TaskCardView()
             card.configure(with: row.card)
             card.onComplete = { [weak self] in
@@ -410,5 +431,11 @@ final class HomeViewController: UIViewController {
     @objc private func handleFilterTap(_ chip: BQChipView) {
         guard let filter = ChallengeFilter(rawValue: chip.tag) else { return }
         viewModel.setFilter(filter)
+    }
+    
+    @objc private func appWillEnterForeground() {
+        guard hasLoadedOnce, viewIfLoaded?.window != nil else { return }
+        
+        Task { await viewModel.load(showingLoader: false) }
     }
 }

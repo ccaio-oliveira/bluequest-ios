@@ -142,6 +142,7 @@ final class HomeViewModel {
         rows = occurrences.map { occurrence in
             HomeTaskRow(
                 taskID: occurrence.taskID,
+                challengeName: occurrence.challengeName,
                 card: TaskCardModel(
                     taskName: occurrence.name,
                     points: occurrence.points,
@@ -212,6 +213,7 @@ final class HomeViewModel {
 
 struct HomeTaskRow: Equatable {
     let taskID: Int
+    let challengeName: String
     let card: TaskCardModel
 }
 

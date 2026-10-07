@@ -21,6 +21,7 @@ final class ChallengeService {
             TodayOccurrence(
                 taskID: dto.taskId,
                 challengeID: dto.challengeId,
+                challengeName: dto.challengeName,
                 name: dto.name,
                 points: dto.points,
                 pointsAwarded: dto.pointsAwarded,
@@ -440,6 +441,7 @@ private struct FeedItemDTO: Decodable {
 struct TodayOccurrence {
     let taskID: Int
     let challengeID: Int
+    let challengeName: String
     let name: String
     let points: Int
     let pointsAwarded: Int?

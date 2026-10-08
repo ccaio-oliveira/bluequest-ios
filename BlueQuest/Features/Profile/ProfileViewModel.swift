@@ -12,7 +12,7 @@ import UserNotifications
 @MainActor
 final class ProfileViewModel {
     private(set) var stats: ProfileStats?
-    private(set) var permissionsText = "Camera e notificações"
+    private(set) var permissionsText = "Câmera e notificações"
     
     var onChange: (() -> Void)?
     

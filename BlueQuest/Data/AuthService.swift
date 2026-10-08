@@ -68,10 +68,34 @@ final class AuthService {
         
         return (response.user.toDomain(), response.token)
     }
+    
+    func requestPasswordReset(email: String) async throws {
+        try await client.post("password/forgot", body: ForgotPasswordRequest(email: email))
+    }
+    
+    func resetPassword(email: String, code: String, password: String, confirmation: String) async throws -> (user: User, token: String) {
+        let response: AuthResponseDTO = try await client.post(
+            "password/reset",
+            body: ResetPasswordRequest(email: email, code: code, password: password, passwordConfirmation: confirmation)
+        )
+        
+        return (response.user.toDomain(), response.token)
+    }
 }
 
 
 private struct SocialAuthRequest: Encodable {
     let identityToken: String
     let name: String?
+}
+
+private struct ForgotPasswordRequest: Encodable {
+    let email: String
+}
+
+private struct ResetPasswordRequest: Encodable {
+    let email: String
+    let code: String
+    let password: String
+    let passwordConfirmation: String
 }

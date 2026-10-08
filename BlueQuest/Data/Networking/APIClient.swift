@@ -68,6 +68,15 @@ final class APIClient {
 
         return try await send(request)
     }
+    
+    func post<Body: Encodable>(_ path: String, body: Body) async throws {
+        var request = URLRequest(url: baseURL.appendingPathComponent(path))
+        request.httpMethod = "POST"
+        request.httpBody = try encoder.encode(body)
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        _ = try await perform(request)
+    }
 
     func postWithoutResponse(_ path: String) async throws {
         var request = URLRequest(url: baseURL.appendingPathComponent(path))
@@ -170,6 +179,8 @@ final class APIClient {
             throw APIError.forbidden
         case 422:
             throw unprocessableError(from: data)
+        case 429:
+            throw APIError.tooManyRequests
         default:
             throw APIError.server(status: http.statusCode)
         }

@@ -15,6 +15,7 @@ enum APIError: LocalizedError {
     case network(Error)
     case decoding(Error)
     case forbidden
+    case tooManyRequests
 
     var errorDescription: String? {
         switch self {
@@ -32,6 +33,8 @@ enum APIError: LocalizedError {
             "Recebemos uma resposta inesperada do servidor."
         case .forbidden:
             "Você não tem permissão para fazer isso."
+        case .tooManyRequests:
+            "Muitas tentativas. Aguarde um minuto e tente de novo."
         }
     }
 
@@ -51,6 +54,7 @@ enum APIError: LocalizedError {
         case "weekly_target_reached": "Você já bateu a meta desta tarefa nesta semana."
         case "current_password_invalid": "A senha atual não confere."
         case "password_required_for_email": "Crie uma senha antes de trocar o e-mail."
+        case "invalid_reset_code": "Código inválido ou expirado. Confira o e-mail ou peça um novo código."
         default: "Não foi possível concluir a ação."
         }
     }

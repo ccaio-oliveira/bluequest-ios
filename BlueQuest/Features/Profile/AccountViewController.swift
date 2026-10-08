@@ -23,7 +23,7 @@ final class AccountViewController: UIViewController {
     private let passwordTitle = OverlineLabel("Senha")
     private let currentPasswordField = BQTextField(label: "Senha atual", placeholder: "Digite sua senha", icon: "lock", isSecure: true)
     private let newPasswordField = BQTextField(label: "Nova senha", placeholder: "Pelo menos 8 caracteres", icon: "lock", isSecure: true)
-    private let confirmPasswordField = BQTextField(label: "Confirmar nova senha", placeholder: "xxxxxxxx", icon: "lock", isSecure: true)
+    private let confirmPasswordField = BQTextField(label: "Confirmar nova senha", placeholder: "********", icon: "lock", isSecure: true)
     private let savePasswordButton = BQButton(title: "Alterar senha", variant: .secondary, size: .lg)
     
     private let toast = ToastView()

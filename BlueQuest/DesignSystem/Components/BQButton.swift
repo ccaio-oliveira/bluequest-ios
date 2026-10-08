@@ -65,7 +65,7 @@ final class BQButton: UIButton {
     init(title: String, icon: String? = nil, variant: Variant = .primary, size: Size = .md) {
         super.init(frame: .zero)
         
-        var config = UIButton.Configuration.filled()
+        var config: UIButton.Configuration = variant == .ghost ? .plain() : .filled()
         config.title = title
         config.baseBackgroundColor = variant.background
         config.baseForegroundColor = variant.foreground

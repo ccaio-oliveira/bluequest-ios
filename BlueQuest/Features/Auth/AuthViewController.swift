@@ -10,6 +10,7 @@ import UIKit
 
 final class AuthViewController: UIViewController {
     var onAuthenticated: (() -> Void)?
+    var onForgotPassword: ((String) -> Void)?
     
     private let viewModel: AuthViewModel
     
@@ -105,6 +106,9 @@ final class AuthViewController: UIViewController {
         forgotLabel.text = "Esqueci minha senha"
         forgotLabel.font = BQFont.body(BQTypeScale.caption, weight: .semibold)
         forgotLabel.textColor = .bqBlueBright
+        forgotLabel.isUserInteractionEnabled = true
+        
+        forgotLabel.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleForgotPassword)))
         
         errorLabel.font = BQFont.body(BQTypeScale.caption, weight: .medium)
         errorLabel.textColor = .bqRed
@@ -206,5 +210,9 @@ final class AuthViewController: UIViewController {
         Task {
             await viewModel.signInWithGoogle(presenting: self)
         }
+    }
+    
+    @objc private func handleForgotPassword() {
+        onForgotPassword?(emailField.text)
     }
 }

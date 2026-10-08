@@ -27,6 +27,25 @@ final class AuthCoordinator: Coordinator {
             self?.onAuthenticated?()
         }
         
+        viewController.onForgotPassword = { [weak self] email in
+            self?.showPasswordReset(email: email)
+        }
+        
         navigationController.setViewControllers([viewController], animated: false)
+    }
+    
+    private func showPasswordReset(email: String) {
+        let viewModel = PasswordResetViewModel(email: email)
+        let viewController = PasswordResetViewController(viewModel: viewModel)
+        
+        viewController.onBack = { [weak self] in
+            self?.navigationController.popViewController(animated: true)
+        }
+        
+        viewModel.onAuthenticated = { [weak self] in
+            self?.onAuthenticated?()
+        }
+        
+        navigationController.pushViewController(viewController, animated: true)
     }
 }
